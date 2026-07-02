@@ -1,0 +1,146 @@
+@import "tailwindcss";
+
+/* ─── Variante dark baseada na classe .dark no <html> ─────────────────────── */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* ─── Modo Claro ──────────────────────────────────────────────────────────── */
+:root {
+  /* Superfícies */
+  --background:   #e9e9e9;   /* slate-100  — fundo geral */
+  --card:         #ffffff;   /* branco     — card/modal  */
+
+  /* Tipografia */
+  --foreground:   #0f172a;   /* slate-900  — texto principal */
+  --muted:        #64748b;   /* slate-500  — texto secundário */
+  --muted-subtle: #94a3b8;   /* slate-400  — placeholder, divisor */
+
+  /* Ação primária */
+  --primary:          #2563eb;  /* blue-600 */
+  --primary-hover:    #1d4ed8;  /* blue-700 */
+  --primary-fg:       #ffffff;
+
+  /* Inputs */
+  --input-bg:         transparent;
+  --input-border:     #cbd5e1;   /* slate-300 */
+  --input-border-focus: #2563eb; /* blue-600  */
+  --input-ring:       #bfdbfe;   /* blue-200  */
+
+  /* Bordas estruturais */
+  --border:           #e2e8f0;   /* slate-200 */
+
+  /* Feedback — Erro */
+  --error-bg:         #fef2f2;   /* red-50   */
+  --error-fg:         #dc2626;   /* red-600  */
+
+  /* Feedback — Sucesso */
+  --success-bg:       #f0fdf4;   /* green-50  */
+  --success-fg:       #16a34a;   /* green-600 */
+  --success-action:   #16a34a;
+  --success-action-hover: #15803d;
+}
+
+/* ─── Modo Escuro ─────────────────────────────────────────────────────────── */
+.dark {
+  /* Superfícies */
+  --background:   #09090b;   /* zinc-950 */
+  --card:         #19191b;   /* zinc-900 */
+
+  /* Tipografia */
+  --foreground:   #f8fafc;   /* slate-50  */
+  --muted:        #a1a1aa;   /* zinc-400  */
+  --muted-subtle: #71717a;   /* zinc-500  */
+
+  /* Ação primária */
+  --primary:          #3b82f6;  /* blue-500  — um tom mais claro no dark */
+  --primary-hover:    #2563eb;  /* blue-600  */
+  --primary-fg:       #ffffff;
+
+  /* Inputs */
+  --input-bg:         transparent;
+  --input-border:     #3f3f46;   /* zinc-700 */
+  --input-border-focus: #3b82f6;
+  --input-ring:       #1e3a5f;
+
+  /* Bordas estruturais */
+  --border:           #27272a; /* zinc-800 */
+
+  /* Feedback — Erro */
+  --error-bg:         rgba(153, 27, 27, 0.2);  /* red-900/20 */
+  --error-fg:         #f87171;                  /* red-400    */
+
+  /* Feedback — Sucesso */
+  --success-bg:       rgba(20, 83, 45, 0.2);   /* green-900/20 */
+  --success-fg:       #4ade80;                  /* green-400   */
+  --success-action:   #16a34a;
+  --success-action-hover: #15803d;
+}
+
+/* ─── Mapeamento para o Tailwind v4 ──────────────────────────────────────── */
+@theme inline {
+  /* Superfícies */
+  --color-background:   var(--background);
+  --color-card:         var(--card);
+
+  /* Tipografia */
+  --color-foreground:   var(--foreground);
+  --color-muted:        var(--muted);
+  --color-muted-subtle: var(--muted-subtle);
+
+  /* Ação primária */
+  --color-primary:      var(--primary);
+  --color-primary-hover: var(--primary-hover);
+  --color-primary-fg:   var(--primary-fg);
+
+  /* Inputs */
+  --color-input-border:       var(--input-border);
+  --color-input-border-focus: var(--input-border-focus);
+  --color-input-ring:         var(--input-ring);
+
+  /* Bordas */
+  --color-border:       var(--border);
+
+  /* Feedback */
+  --color-error-bg:     var(--error-bg);
+  --color-error-fg:     var(--error-fg);
+  --color-success-bg:   var(--success-bg);
+  --color-success-fg:   var(--success-fg);
+  --color-success-action: var(--success-action);
+  --color-success-action-hover: var(--success-action-hover);
+
+  /* Tipografia */
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+/* ─── Base global ─────────────────────────────────────────────────────────── */
+body {
+  background-color: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans), Arial, Helvetica, sans-serif;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* ─── Utilitário de input ─────────────────────────────────────────────────── */
+@layer components {
+  .input-base {
+    width: 100%;
+    padding: 0.5rem 1rem;
+    border-width: 1px;
+    border-style: solid;
+    border-color: var(--input-border);
+    border-radius: 0.5rem;
+    background-color: var(--input-bg);
+    color: var(--foreground);
+    outline: none;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  }
+
+  .input-base::placeholder {
+    color: var(--muted-subtle);
+  }
+
+  .input-base:focus {
+    border-color: var(--input-border-focus);
+    box-shadow: 0 0 0 3px var(--input-ring);
+  }
+}
