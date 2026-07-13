@@ -9,10 +9,11 @@ export default async function HomePage() {
     .from('eventos')
     .select(`
       *,
-      cursos (
+      estabelecimentos (
         id,
         nome,
-        sigla
+        slug,
+        logo_url
       ),
       lotes (
         *
@@ -30,7 +31,7 @@ export default async function HomePage() {
             </h1>
 
             <p className="text-gray-400 mt-2">
-              Eventos ativos na faculdade
+              Eventos, mesas e camarotes disponíveis agora
             </p>
           </div>
 

@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { createSupabaseBrowserClient } from '@/src/config/supabase-browser';
 
 interface Lote {
   id: string;
@@ -9,14 +10,19 @@ interface Lote {
   quantidade_disponivel: number;
 }
 
-interface Curso {
-  sigla: string;
+interface Estabelecimento {
+  id: string;
+  nome: string;
+  slug: string;
+  logo_url: string | null;
 }
 
 interface Evento {
+  id: string;
   nome: string;
   descricao: string;
-  cursos?: Curso | Curso[] | null;
+  categoria?: string | null;
+  estabelecimentos?: Estabelecimento | Estabelecimento[] | null;
   lotes?: Lote[];
 }
 
@@ -46,6 +52,17 @@ export default function CardEvento({ evento }: CardEventoProps) {
     setLoading(true);
 
     try {
+      // Confere sessão no client antes de bater na API — evita um round-trip
+      // desnecessário quando já sabemos que o usuário não está logado.
+      const supabase = createSupabaseBrowserClient();
+      const { data: { session } } = await supabase.auth.getSession();
+
+      if (!session) {
+        const redirectTo = `/eventos/${evento.id}`; // volta pra cá depois do login
+        router.push(`/auth/login?redirect=${encodeURIComponent(redirectTo)}`);
+        return;
+      }
+
       const response = await fetch('/api/checkout', {
         method: 'POST',
         headers: {
@@ -53,23 +70,26 @@ export default function CardEvento({ evento }: CardEventoProps) {
         },
         body: JSON.stringify({
           loteId: loteAtivo.id,
-          usuarioId: '00000000-0000-0000-0000-000000000000', // UUID temporário
         }),
       });
 
       const dados: {
         error?: string;
+        requiresLogin?: boolean;
         message?: string;
         txid?: string;
         inscricaoId?: string;
       } = await response.json();
 
       if (!response.ok) {
+        if (dados.requiresLogin) {
+          router.push(`/auth/login?redirect=${encodeURIComponent(`/eventos/${evento.id}`)}`);
+          return;
+        }
         alert(dados.error || 'Erro ao realizar inscrição');
         return;
       }
 
-      // Redireciona o usuário diretamente para a nova rota dinâmica da tela do PIX
       if (dados.inscricaoId) {
         router.push(`/checkout/${dados.inscricaoId}`);
       } else {
@@ -88,10 +108,12 @@ export default function CardEvento({ evento }: CardEventoProps) {
     <div className="bg-gray-900 border border-gray-800 rounded-xl p-6 hover:border-gray-700 transition-all flex flex-col justify-between">
       <div>
         <span className="text-xs font-semibold bg-blue-500/10 text-blue-400 px-2.5 py-1 rounded-full uppercase tracking-wider">
-  {Array.isArray(evento.cursos)
-    ? evento.cursos[0]?.sigla
-    : evento.cursos?.sigla || 'Geral'}
-</span>
+          {evento.categoria
+            || (Array.isArray(evento.estabelecimentos)
+                ? evento.estabelecimentos[0]?.nome
+                : evento.estabelecimentos?.nome)
+            || 'Evento'}
+        </span>
 
         <h2 className="text-xl font-bold mt-3 text-white">
           {evento.nome}

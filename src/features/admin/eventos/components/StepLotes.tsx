@@ -1,8 +1,8 @@
 // src/features/admin/eventos/components/StepLotes.tsx
 'use client';
 
-import { Plus, Trash2, Eye, EyeOff } from 'lucide-react';
-import type { Lote, LotesFormData } from '../types';
+import { Plus, Trash2, Eye, EyeOff, Ticket, UtensilsCrossed, Crown } from 'lucide-react';
+import type { Lote, LoteTipo, LotesFormData } from '../types';
 
 interface StepLotesProps {
   data: LotesFormData;
@@ -11,15 +11,23 @@ interface StepLotesProps {
   onChange: (data: Partial<LotesFormData>) => void;
 }
 
+const TIPOS_LOTE: { value: LoteTipo; label: string; icon: React.ElementType }[] = [
+  { value: 'ingresso', label: 'Ingresso',  icon: Ticket           },
+  { value: 'mesa',     label: 'Mesa',      icon: UtensilsCrossed  },
+  { value: 'camarote', label: 'Camarote',  icon: Crown            },
+];
+
 function novoLote(index: number): Lote {
   return {
-    id:         crypto.randomUUID(),
-    nome:       `Lote ${index + 1}`,
-    quantidade: 50,
-    preco:      0,
-    dataInicio: '',
-    dataFim:    '',
-    visivel:    true,
+    id:                crypto.randomUUID(),
+    nome:              `Lote ${index + 1}`,
+    quantidade:        50,
+    preco:             0,
+    dataInicio:        '',
+    dataFim:           '',
+    visivel:           true,
+    tipo:              'ingresso',
+    capacidadePessoas: null,
   };
 }
 
@@ -46,13 +54,13 @@ function LoteCard({
   totalLotes: number;
 }) {
   const isGratuito = lote.preco === 0;
+  const precisaCapacidade = lote.tipo !== 'ingresso';
 
   return (
     <div className={`bg-card border rounded-xl overflow-hidden transition-all ${lote.visivel ? 'border-border' : 'border-dashed border-border opacity-60'}`}>
 
       {/* Header do lote */}
       <div className="flex items-center gap-3 px-4 py-3 border-b border-border">
-        {/* Indicador de ordem */}
         <div className="w-7 h-7 rounded-full bg-primary/10 text-primary text-xs font-bold flex items-center justify-center shrink-0">
           {index + 1}
         </div>
@@ -65,12 +73,10 @@ function LoteCard({
           onChange={(e) => onUpdate({ nome: e.target.value })}
         />
 
-        {/* Badge de preço */}
         <span className={`hidden sm:inline text-xs px-2.5 py-0.5 rounded-full font-medium shrink-0 ${isGratuito ? 'bg-success-bg text-success-fg' : 'bg-primary/10 text-primary'}`}>
           {formatCurrency(lote.preco)}
         </span>
 
-        {/* Toggle visibilidade */}
         <button
           type="button"
           onClick={() => onUpdate({ visivel: !lote.visivel })}
@@ -81,7 +87,6 @@ function LoteCard({
           {lote.visivel ? <Eye size={15} /> : <EyeOff size={15} />}
         </button>
 
-        {/* Remover — não permite remover se for o único */}
         <button
           type="button"
           onClick={onRemove}
@@ -93,8 +98,32 @@ function LoteCard({
         </button>
       </div>
 
+      {/* Seletor de tipo — ingresso / mesa / camarote */}
+      <div className="px-4 pt-3 flex gap-2">
+        {TIPOS_LOTE.map(({ value, label, icon: Icon }) => (
+          <button
+            key={value}
+            type="button"
+            onClick={() => onUpdate({
+              tipo: value,
+              capacidadePessoas: value === 'ingresso' ? null : (lote.capacidadePessoas ?? 4),
+            })}
+            className={`
+              flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition-all
+              ${lote.tipo === value
+                ? 'bg-primary/10 border-primary text-primary'
+                : 'border-border text-muted hover:border-input-border-focus hover:text-foreground'
+              }
+            `}
+          >
+            <Icon size={13} />
+            {label}
+          </button>
+        ))}
+      </div>
+
       {/* Corpo do lote */}
-      <div className="px-4 py-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className={`px-4 py-4 grid grid-cols-1 sm:grid-cols-2 gap-4 ${precisaCapacidade ? 'lg:grid-cols-5' : 'lg:grid-cols-4'}`}>
 
         {/* Preço */}
         <div>
@@ -123,7 +152,7 @@ function LoteCard({
         {/* Quantidade */}
         <div>
           <label className="block text-xs font-medium text-foreground mb-1">
-            Vagas disponíveis
+            {precisaCapacidade ? 'Qtd. de mesas/camarotes' : 'Vagas disponíveis'}
           </label>
           <input
             type="number"
@@ -134,6 +163,23 @@ function LoteCard({
             onChange={(e) => onUpdate({ quantidade: Number(e.target.value) })}
           />
         </div>
+
+        {/* Capacidade de pessoas — só pra mesa/camarote */}
+        {precisaCapacidade && (
+          <div>
+            <label className="block text-xs font-medium text-foreground mb-1">
+              Pessoas por mesa
+            </label>
+            <input
+              type="number"
+              min={1}
+              className="input-base"
+              placeholder="4"
+              value={lote.capacidadePessoas ?? ''}
+              onChange={(e) => onUpdate({ capacidadePessoas: Number(e.target.value) })}
+            />
+          </div>
+        )}
 
         {/* Data de início das vendas */}
         <div>
@@ -196,14 +242,14 @@ export function StepLotes({
     <div className="space-y-4">
 
       <p className="text-sm text-muted">
-        Defina os lotes de ingressos. Lotes com preço zero geram ingressos gratuitos.
+        Defina os lotes de ingressos, mesas ou camarotes. Lotes com preço zero geram ingressos gratuitos.
         A ordem dos lotes é a ordem exibida na página de vendas.
       </p>
 
       {/* Resumo */}
       <div className="grid grid-cols-2 gap-3">
         <div className="bg-card border border-border rounded-lg px-4 py-3">
-          <p className="text-xs text-muted">Total de vagas</p>
+          <p className="text-xs text-muted">Total de vagas/mesas</p>
           <p className="text-lg font-bold text-foreground mt-0.5">{totalVagas}</p>
         </div>
         <div className="bg-card border border-border rounded-lg px-4 py-3">

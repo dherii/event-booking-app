@@ -1,4 +1,3 @@
-// src/features/admin/financeiro/components/TabelaExtrato.tsx
 'use client';
 
 import { useMemo, useState } from 'react';
@@ -84,7 +83,7 @@ export function TabelaExtrato({ transacoes }: TabelaExtratoProps) {
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-border bg-background">
-                {['Data', 'Aluno', 'Evento / Lote', 'Bruto', 'Taxa (5%)', 'Líquido', 'Status'].map((h) => (
+                {['Data', 'Comprador', 'Evento / Lote', 'Bruto', 'Taxa (5%)', 'Líquido', 'Status'].map((h) => (
                   <th
                     key={h}
                     className="px-4 py-3 text-left text-xs font-semibold text-muted uppercase tracking-wide whitespace-nowrap"
@@ -110,7 +109,7 @@ export function TabelaExtrato({ transacoes }: TabelaExtratoProps) {
                       <td className="px-4 py-3 text-muted text-xs whitespace-nowrap">{fmtData(t.data)}</td>
                       <td className="px-4 py-3 whitespace-nowrap">
                         <p className="font-medium text-foreground">{t.aluno}</p>
-                        <p className="text-xs text-muted">{t.email}</p>
+                        {t.email && <p className="text-xs text-muted">{t.email}</p>}
                       </td>
                       <td className="px-4 py-3 whitespace-nowrap">
                         <p className="text-foreground">{t.evento}</p>

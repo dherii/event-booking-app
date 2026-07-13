@@ -1,17 +1,15 @@
-// app/auth/login/page.tsx
+// app/auth/cadastro/page.tsx
 'use client';
 
-import { useState, Suspense } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Loader2 } from 'lucide-react';
 import { createSupabaseBrowserClient } from '@/src/config/supabase-browser';
 
-function LoginForm() {
+export default function CadastroPage() {
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const redirectTo = searchParams.get('redirect') || '/admin';
-
+  const [nome, setNome] = useState('');
   const [email, setEmail] = useState('');
   const [senha, setSenha] = useState('');
   const [loading, setLoading] = useState(false);
@@ -22,30 +20,55 @@ function LoginForm() {
     setLoading(true);
     setErro(null);
 
-    const supabase = createSupabaseBrowserClient();
-    const { error } = await supabase.auth.signInWithPassword({ email, password: senha });
-
-    if (error) {
-      setErro(error.message === 'Invalid login credentials'
-        ? 'E-mail ou senha incorretos.'
-        : error.message);
+    if (senha.length < 6) {
+      setErro('A senha precisa ter pelo menos 6 caracteres.');
       setLoading(false);
       return;
     }
 
-    router.push(redirectTo);
-    router.refresh();
+    const supabase = createSupabaseBrowserClient();
+    const { error } = await supabase.auth.signUp({
+      email,
+      password: senha,
+      options: {
+        data: { nome }, // o trigger handle_new_user() lê isso pra criar o profile
+      },
+    });
+
+    if (error) {
+      setErro(error.message);
+      setLoading(false);
+      return;
+    }
+
+    // Por padrão o novo usuário nasce com role 'cliente' (default da tabela profiles).
+    // Pra virar dono_estabelecimento, é preciso promovê-lo manualmente ou via
+    // fluxo de onboarding de estabelecimento (próximo passo).
+    router.push('/auth/login?cadastro=sucesso');
   }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-950 text-white p-4">
       <div className="w-full max-w-sm bg-gray-900 border border-gray-800 rounded-2xl p-8 space-y-6">
         <div>
-          <h1 className="text-xl font-bold">Entrar</h1>
-          <p className="text-sm text-gray-400 mt-1">Acesse o painel do seu estabelecimento.</p>
+          <h1 className="text-xl font-bold">Criar conta</h1>
+          <p className="text-sm text-gray-400 mt-1">Cadastre-se para comprar ingressos ou gerenciar seu estabelecimento.</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="block text-xs font-semibold uppercase text-gray-400 mb-1">
+              Nome
+            </label>
+            <input
+              type="text"
+              value={nome}
+              onChange={(e) => setNome(e.target.value)}
+              className="w-full bg-gray-950 border border-gray-800 rounded-lg p-2.5 text-sm text-white focus:outline-none focus:border-blue-500 transition-colors"
+              required
+            />
+          </div>
+
           <div>
             <label className="block text-xs font-semibold uppercase text-gray-400 mb-1">
               E-mail
@@ -69,6 +92,7 @@ function LoginForm() {
               onChange={(e) => setSenha(e.target.value)}
               className="w-full bg-gray-950 border border-gray-800 rounded-lg p-2.5 text-sm text-white focus:outline-none focus:border-blue-500 transition-colors"
               required
+              minLength={6}
             />
           </div>
 
@@ -84,25 +108,17 @@ function LoginForm() {
             className="w-full flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-500 text-white font-semibold py-2.5 rounded-lg transition-all active:scale-[0.99] disabled:opacity-50"
           >
             {loading ? <Loader2 size={16} className="animate-spin" /> : null}
-            {loading ? 'Entrando…' : 'Entrar'}
+            {loading ? 'Criando conta…' : 'Criar conta'}
           </button>
         </form>
 
         <p className="text-center text-sm text-gray-500">
-          Não tem conta?{' '}
-          <Link href="/auth/cadastro" className="text-blue-400 hover:underline">
-            Cadastre-se
+          Já tem conta?{' '}
+          <Link href="/auth/login" className="text-blue-400 hover:underline">
+            Entrar
           </Link>
         </p>
       </div>
     </div>
-  );
-}
-
-export default function LoginPage() {
-  return (
-    <Suspense>
-      <LoginForm />
-    </Suspense>
   );
 }

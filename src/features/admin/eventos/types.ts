@@ -11,6 +11,8 @@ export interface Atividade {
   tipo: 'palestra' | 'oficina' | 'mesa-redonda' | 'outro';
 }
 
+export type LoteTipo = 'ingresso' | 'mesa' | 'camarote';
+
 export interface Lote {
   id: string;
   nome: string;
@@ -19,6 +21,8 @@ export interface Lote {
   dataInicio: string;
   dataFim: string;
   visivel: boolean;
+  tipo: LoteTipo;
+  capacidadePessoas: number | null; // nº de pessoas — só relevante pra mesa/camarote
 }
 
 // Etapa 1 — dados do evento pai
