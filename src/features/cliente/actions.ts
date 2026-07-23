@@ -125,19 +125,10 @@ export async function cancelarMinhaInscricao(inscricaoId: string) {
 
   if (errCancelar) throw new Error(errCancelar.message);
 
-  // Devolve a vaga pro estoque
-  const { data: loteAtual } = await supabase
-    .from('lotes')
-    .select('quantidade_disponivel, quantidade_total')
-    .eq('id', inscricao.lote_id)
-    .single();
-
-  if (loteAtual) {
-    const novaDisponivel = Math.min(loteAtual.quantidade_total, loteAtual.quantidade_disponivel + 1);
-    await supabase
-      .from('lotes')
-      .update({ quantidade_disponivel: novaDisponivel })
-      .eq('id', inscricao.lote_id);
+  // Devolve a vaga pro estoque de forma atômica
+  const { error: errDevolucao } = await supabase.rpc('devolver_vaga', { p_lote_id: inscricao.lote_id });
+  if (errDevolucao) {
+    console.error('Erro ao devolver vaga ao estoque:', errDevolucao);
   }
 
   return { success: true };

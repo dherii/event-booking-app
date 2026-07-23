@@ -4,7 +4,9 @@ import { createSupabaseServerClient } from '@/src/config/supabase-server';
 
 export async function POST(request: Request) {
   try {
-
+    // 1. Descobre quem está logado a partir da sessão (cookies) — nunca
+    //    confiamos num usuarioId vindo do corpo da requisição, porque
+    //    qualquer client poderia mandar o UUID de outra pessoa.
     const supabaseAuth = await createSupabaseServerClient();
     const { data: { user } } = await supabaseAuth.auth.getUser();
 
@@ -23,23 +25,10 @@ export async function POST(request: Request) {
 
     const supabaseAdmin = getSupabaseAdmin();
 
-    const { data: lote, error: loteError } = await supabaseAdmin
-      .from('lotes')
-      .select('quantidade_disponivel, preco')
-      .eq('id', loteId)
-      .single();
-
-    if (loteError || !lote) {
-      return NextResponse.json({ error: 'Lote não encontrado.' }, { status: 404 });
-    }
-
-    if (lote.quantidade_disponivel <= 0) {
-      return NextResponse.json({ error: 'Ingressos esgotados para este lote!' }, { status: 400 });
-    }
-
     // Regra de negócio do planejamento: 1 ingresso por CPF/pessoa por evento.
     // Verificação simples por enquanto — checa se esse usuário já tem uma
-    // inscrição pendente ou paga pra esse mesmo lote.
+    // inscrição pendente ou paga pra esse mesmo lote. Feita ANTES de reservar
+    // a vaga, pra não gastar estoque à toa se essa checagem já for barrar.
     const { data: inscricaoExistente } = await supabaseAdmin
       .from('inscricoes')
       .select('id, status_pagamento')
@@ -55,13 +44,23 @@ export async function POST(request: Request) {
       );
     }
 
-    const { error: updateError } = await supabaseAdmin
-      .from('lotes')
-      .update({ quantidade_disponivel: lote.quantidade_disponivel - 1 })
-      .eq('id', loteId);
+    // 2. Reserva a vaga de forma ATÔMICA — a checagem "tem vaga?" e o
+    //    decremento acontecem num único UPDATE dentro do banco, sem brecha
+    //    de tempo entre eles. Mesmo com dois compradores simultâneos
+    //    disputando a última vaga, o Postgres garante que só um consegue.
+    const { data: reserva, error: reservaError } = await supabaseAdmin
+      .rpc('reservar_vaga', { p_lote_id: loteId })
+      .single();
 
-    if (updateError) {
+    if (reservaError) {
+      console.error('Erro ao reservar vaga:', reservaError);
       return NextResponse.json({ error: 'Erro ao reservar seu ingresso.' }, { status: 500 });
+    }
+
+    const resultado = reserva as { sucesso: boolean; preco: number | null };
+
+    if (!resultado.sucesso) {
+      return NextResponse.json({ error: 'Ingressos esgotados para este lote!' }, { status: 400 });
     }
 
     const txidFake = `txid_simulado_${Math.random().toString(36).substring(2, 15)}`;
@@ -78,11 +77,8 @@ export async function POST(request: Request) {
       .single();
 
     if (inscricaoError) {
-      // rollback do decremento se a inscrição falhar
-      await supabaseAdmin
-        .from('lotes')
-        .update({ quantidade_disponivel: lote.quantidade_disponivel })
-        .eq('id', loteId);
+      // rollback: devolve a vaga que reservamos, já que a inscrição falhou
+      await supabaseAdmin.rpc('devolver_vaga', { p_lote_id: loteId });
 
       return NextResponse.json({ error: 'Erro ao gerar pedido de inscrição.' }, { status: 500 });
     }

@@ -166,20 +166,13 @@ export async function cancelarInscricao(inscricaoId: string) {
 
   if (errCancelar) throw new Error(errCancelar.message);
 
-  // Devolve a vaga pro estoque do lote — sem isso, uma vaga cancelada
-  // ficaria "presa" e nunca mais poderia ser vendida.
-  const { data: lote } = await supabase
-    .from('lotes')
-    .select('quantidade_disponivel, quantidade_total')
-    .eq('id', inscricao.lote_id)
-    .single();
-
-  if (lote) {
-    const novaDisponivel = Math.min(lote.quantidade_total, lote.quantidade_disponivel + 1);
-    await supabase
-      .from('lotes')
-      .update({ quantidade_disponivel: novaDisponivel })
-      .eq('id', inscricao.lote_id);
+  // Devolve a vaga pro estoque do lote de forma atômica — sem isso, uma
+  // vaga cancelada ficaria "presa" e nunca mais poderia ser vendida.
+  const { error: errDevolucao } = await supabase.rpc('devolver_vaga', { p_lote_id: inscricao.lote_id });
+  if (errDevolucao) {
+    console.error('Erro ao devolver vaga ao estoque:', errDevolucao);
+    // não interrompe o fluxo por isso — a inscrição já foi cancelada,
+    // o estoque pode ser ajustado manualmente se necessário
   }
 
   return { success: true };
