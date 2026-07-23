@@ -1,19 +1,23 @@
 // app/auth/cadastro/page.tsx
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { Loader2 } from 'lucide-react';
 import { createSupabaseBrowserClient } from '@/src/config/supabase-browser';
 
-export default function CadastroPage() {
+function CadastroForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+const redirectTo = searchParams.get('redirect') || '/';
   const [nome, setNome] = useState('');
   const [email, setEmail] = useState('');
   const [senha, setSenha] = useState('');
   const [loading, setLoading] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
+
+  const criandoEstabelecimento = redirectTo === '/onboarding';
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -41,18 +45,25 @@ export default function CadastroPage() {
       return;
     }
 
-    // Por padrão o novo usuário nasce com role 'cliente' (default da tabela profiles).
-    // Pra virar dono_estabelecimento, é preciso promovê-lo manualmente ou via
-    // fluxo de onboarding de estabelecimento (próximo passo).
-    router.push('/auth/login?cadastro=sucesso');
+    // Por padrão o novo usuário nasce com role 'cliente' (default da tabela
+    // profiles). Se veio pelo link de "cadastrar estabelecimento", o
+    // redirect leva pro /onboarding, onde ele mesmo cria o estabelecimento
+    // e é promovido a dono_estabelecimento automaticamente.
+    router.push(`/auth/login?cadastro=sucesso&redirect=${encodeURIComponent(redirectTo)}`);
   }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-950 text-white p-4">
       <div className="w-full max-w-sm bg-gray-900 border border-gray-800 rounded-2xl p-8 space-y-6">
         <div>
-          <h1 className="text-xl font-bold">Criar conta</h1>
-          <p className="text-sm text-gray-400 mt-1">Cadastre-se para comprar ingressos ou gerenciar seu estabelecimento.</p>
+          <h1 className="text-xl font-bold">
+            {criandoEstabelecimento ? 'Cadastre seu estabelecimento' : 'Criar conta'}
+          </h1>
+          <p className="text-sm text-gray-400 mt-1">
+            {criandoEstabelecimento
+              ? 'Primeiro crie sua conta — no próximo passo você cadastra os dados da sua casa de eventos.'
+              : 'Cadastre-se para comprar ingressos, mesas e camarotes.'}
+          </p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -114,11 +125,19 @@ export default function CadastroPage() {
 
         <p className="text-center text-sm text-gray-500">
           Já tem conta?{' '}
-          <Link href="/auth/login" className="text-blue-400 hover:underline">
+          <Link href={`/auth/login${criandoEstabelecimento ? '?redirect=/onboarding' : ''}`} className="text-blue-400 hover:underline">
             Entrar
           </Link>
         </p>
       </div>
     </div>
+  );
+}
+
+export default function CadastroPage() {
+  return (
+    <Suspense>
+      <CadastroForm />
+    </Suspense>
   );
 }

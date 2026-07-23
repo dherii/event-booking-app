@@ -12,6 +12,12 @@ interface LoteInput {
   capacidadePessoas?: number | null;
 }
 
+interface AtracaoInput {
+  nomeArtista: string;
+  horario?: string | null;
+  fotoUrl?: string | null;
+}
+
 interface EventoInput {
   nome: string;
   descricao: string;
@@ -23,6 +29,7 @@ interface EventoInput {
   classificacaoEtaria?: number;
   bannerUrl?: string | null;
   lotes: LoteInput[];
+  atracoes?: AtracaoInput[];
 }
 
 export async function criarEventoComLotes(data: EventoInput) {
@@ -99,6 +106,27 @@ export async function criarEventoComLotes(data: EventoInput) {
     // rollback manual — sem transação real porque são duas chamadas separadas
     await supabase.from('eventos').delete().eq('id', evento.id);
     throw new Error(errLotes.message);
+  }
+
+  // 4. Insere as atrações (line-up), se houver — etapa opcional do wizard
+  const atracoesValidas = (data.atracoes ?? []).filter((a) => a.nomeArtista.trim());
+
+  if (atracoesValidas.length > 0) {
+    const atracoesParaInserir = atracoesValidas.map((a, index) => ({
+      evento_id: evento.id,
+      nome_artista: a.nomeArtista,
+      horario: a.horario || null,
+      foto_url: a.fotoUrl || null,
+      ordem: index,
+    }));
+
+    const { error: errAtracoes } = await supabase.from('atracoes').insert(atracoesParaInserir);
+
+    if (errAtracoes) {
+      console.error('Erro ao criar atrações:', errAtracoes);
+      // Não faz rollback do evento inteiro por causa disso — evento e lotes já
+      // estão válidos, o line-up pode ser adicionado depois manualmente.
+    }
   }
 
   return { success: true, eventoId: evento.id };

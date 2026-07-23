@@ -1,14 +1,10 @@
 // src/features/admin/eventos/types.ts
 
-export interface Atividade {
+export interface Atracao {
   id: string;
-  titulo: string;
-  descricao: string;
-  data: string;
-  horarioInicio: string;
-  horarioFim: string;
-  local: string;
-  tipo: 'palestra' | 'oficina' | 'mesa-redonda' | 'outro';
+  nomeArtista: string;
+  horario: string; // datetime-local (ex: 2026-07-20T23:00)
+  fotoUrl: string;
 }
 
 export type LoteTipo = 'ingresso' | 'mesa' | 'camarote';
@@ -39,9 +35,9 @@ export interface EventoFormData {
   categorias: string[];
 }
 
-// Etapa 2 — cronograma de atividades
-export interface CronogramaFormData {
-  atividades: Atividade[];
+// Etapa 2 — atrações / line-up
+export interface AtracoesFormData {
+  atracoes: Atracao[];
 }
 
 // Etapa 3 — lotes de ingressos
@@ -52,6 +48,6 @@ export interface LotesFormData {
 // Estado global do wizard
 export interface WizardState {
   evento: EventoFormData;
-  cronograma: CronogramaFormData;
+  atracoes: AtracoesFormData;
   lotes: LotesFormData;
 }

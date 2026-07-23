@@ -38,12 +38,17 @@ export async function middleware(request: NextRequest) {
     // Confere o papel do usuário — só dono/staff/super_admin entram no admin
     const { data: profile } = await supabase
       .from('profiles')
-      .select('role')
+      .select('role, estabelecimento_id')
       .eq('id', user.id)
       .single();
 
     const papeisPermitidos = ['super_admin', 'dono_estabelecimento', 'staff_checkin'];
     if (!profile || !papeisPermitidos.includes(profile.role)) {
+      // Cliente comum sem estabelecimento — oferece o onboarding em vez de
+      // só bloquear, já que pode ser alguém querendo cadastrar o negócio dele
+      if (profile && !profile.estabelecimento_id) {
+        return NextResponse.redirect(new URL('/onboarding', request.url));
+      }
       return NextResponse.redirect(new URL('/', request.url));
     }
   }

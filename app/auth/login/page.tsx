@@ -10,8 +10,7 @@ import { createSupabaseBrowserClient } from '@/src/config/supabase-browser';
 function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const redirectTo = searchParams.get('redirect') || '/admin';
-
+const redirectTo = searchParams.get('redirect') || '/';
   const [email, setEmail] = useState('');
   const [senha, setSenha] = useState('');
   const [loading, setLoading] = useState(false);

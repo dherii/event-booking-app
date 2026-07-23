@@ -7,18 +7,19 @@ import { ArrowLeft, ArrowRight, Rocket } from 'lucide-react';
 
 import { WizardStepper } from '@/src/features/admin/eventos/components/WizardStepper';
 import { StepEvento }     from '@/src/features/admin/eventos/components/StepEvento';
-import { StepCronograma } from '@/src/features/admin/eventos/components/StepCronograma';
+import { StepAtracoes }   from '@/src/features/admin/eventos/components/StepAtracoes';
 import { StepLotes }      from '@/src/features/admin/eventos/components/StepLotes';
 import { criarEventoComLotes } from '@/src/features/admin/eventos/actions';
+import { createSupabaseBrowserClient } from '@/src/config/supabase-browser';
 
 import type { WizardState } from '@/src/features/admin/eventos/types';
 
 // ─── Configuração dos steps ───────────────────────────────────────────────────
 
 const STEPS = [
-  { label: 'Evento',       description: 'Informações gerais'  },
-  { label: 'Cronograma',   description: 'Atividades e datas'  },
-  { label: 'Ingressos',    description: 'Lotes e preços'      },
+  { label: 'Evento',    description: 'Informações gerais'  },
+  { label: 'Atrações',  description: 'Line-up e horários'  },
+  { label: 'Ingressos', description: 'Lotes e preços'      },
 ];
 
 // ─── Estado inicial ───────────────────────────────────────────────────────────
@@ -36,8 +37,8 @@ const INITIAL_STATE: WizardState = {
     capacidadeTotal:  0,
     categorias:       [],
   },
-  cronograma: {
-    atividades: [],
+  atracoes: {
+    atracoes: [],
   },
   lotes: {
     lotes: [
@@ -67,10 +68,8 @@ function validateStep(step: number, state: WizardState): string | null {
       return 'A data de encerramento deve ser após o início.';
   }
   if (step === 1) {
-    const semTitulo = state.cronograma.atividades.some((a) => !a.titulo.trim());
-    if (semTitulo) return 'Todas as atividades precisam de um título.';
-    const semData   = state.cronograma.atividades.some((a) => !a.data);
-    if (semData)   return 'Todas as atividades precisam de uma data.';
+    const semNome = state.atracoes.atracoes.some((a) => !a.nomeArtista.trim());
+    if (semNome) return 'Toda atração precisa de um nome — ou remova a linha em branco.';
   }
   if (step === 2) {
     if (state.lotes.lotes.length === 0) return 'Adicione ao menos um lote de ingressos.';
@@ -96,8 +95,8 @@ export default function NovoEventoPage() {
   function updateEvento(patch: Partial<WizardState['evento']>) {
     setState((prev) => ({ ...prev, evento: { ...prev.evento, ...patch } }));
   }
-  function updateCronograma(patch: Partial<WizardState['cronograma']>) {
-    setState((prev) => ({ ...prev, cronograma: { ...prev.cronograma, ...patch } }));
+  function updateAtracoes(patch: Partial<WizardState['atracoes']>) {
+    setState((prev) => ({ ...prev, atracoes: { ...prev.atracoes, ...patch } }));
   }
   function updateLotes(patch: Partial<WizardState['lotes']>) {
     setState((prev) => ({ ...prev, lotes: { ...prev.lotes, ...patch } }));
@@ -128,9 +127,35 @@ export default function NovoEventoPage() {
     setError(null);
 
     try {
-      // NOTA: upload real do banner (Storage do Supabase) ainda não está
-      // implementado — por ora enviamos null. O arquivo `state.evento.banner`
-      // fica disponível pra quando plugarmos o upload.
+      // 1. Se o usuário selecionou um banner, faz o upload real pro Storage
+      //    antes de criar o evento — precisamos da URL pública primeiro.
+      let bannerUrl: string | null = null;
+
+      if (state.evento.banner) {
+        const supabase = createSupabaseBrowserClient();
+        const { data: { user } } = await supabase.auth.getUser();
+
+        if (!user) {
+          throw new Error('Sessão expirada — faça login novamente.');
+        }
+
+        const file = state.evento.banner;
+        const extensao = file.name.split('.').pop() ?? 'jpg';
+        const caminho = `${user.id}/${crypto.randomUUID()}.${extensao}`;
+
+        const { error: uploadError } = await supabase.storage
+          .from('banners')
+          .upload(caminho, file, { cacheControl: '3600', upsert: false });
+
+        if (uploadError) {
+          throw new Error(`Erro ao enviar a imagem do banner: ${uploadError.message}`);
+        }
+
+        const { data: publicUrlData } = supabase.storage.from('banners').getPublicUrl(caminho);
+        bannerUrl = publicUrlData.publicUrl;
+      }
+
+      // 2. Cria o evento já com a URL real do banner (ou null, se não enviou)
       await criarEventoComLotes({
         nome:                state.evento.nome,
         descricao:           state.evento.descricao,
@@ -140,7 +165,7 @@ export default function NovoEventoPage() {
         modalidade:          state.evento.modalidade,
         categoria:           state.evento.categorias[0] ?? undefined,
         classificacaoEtaria: 18,
-        bannerUrl:           null,
+        bannerUrl,
         lotes: state.lotes.lotes.map((l) => ({
           nome:              l.nome,
           preco:             l.preco,
@@ -148,6 +173,13 @@ export default function NovoEventoPage() {
           tipo:              l.tipo,
           capacidadePessoas: l.capacidadePessoas,
         })),
+        atracoes: state.atracoes.atracoes
+          .filter((a) => a.nomeArtista.trim())
+          .map((a) => ({
+            nomeArtista: a.nomeArtista,
+            horario:     a.horario || null,
+            fotoUrl:     a.fotoUrl || null,
+          })),
       });
 
       router.push('/admin/eventos');
@@ -197,12 +229,7 @@ export default function NovoEventoPage() {
           <StepEvento data={state.evento} onChange={updateEvento} />
         )}
         {step === 1 && (
-          <StepCronograma
-            data={state.cronograma}
-            dataInicioEvento={state.evento.dataInicio}
-            dataFimEvento={state.evento.dataFim}
-            onChange={updateCronograma}
-          />
+          <StepAtracoes data={state.atracoes} onChange={updateAtracoes} />
         )}
         {step === 2 && (
           <StepLotes

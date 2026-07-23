@@ -91,6 +91,100 @@ export async function realizarCheckin(inscricaoId: string): Promise<ResultadoChe
   return { tipo: 'sucesso', checkinAt: agora };
 }
 
+// ─── Helper reutilizável: confirma que o usuário logado pode mexer nessa inscrição ──
+
+async function verificarPermissaoInscricao(inscricaoId: string) {
+  const supabaseAuth = await createSupabaseServerClient();
+  const { data: { user } } = await supabaseAuth.auth.getUser();
+  if (!user) throw new Error('Você precisa estar logado.');
+
+  const { data: profile } = await supabaseAuth
+    .from('profiles')
+    .select('estabelecimento_id, role')
+    .eq('id', user.id)
+    .single();
+
+  const papeisPermitidos = ['super_admin', 'dono_estabelecimento', 'staff_checkin'];
+  if (!profile || !papeisPermitidos.includes(profile.role)) {
+    throw new Error('Você não tem permissão para esta ação.');
+  }
+
+  const supabase = getSupabaseAdmin();
+
+  const { data: inscricao, error } = await supabase
+    .from('inscricoes')
+    .select(`
+      id,
+      status_pagamento,
+      lote_id,
+      lotes!inner ( eventos!inner ( estabelecimento_id ) )
+    `)
+    .eq('id', inscricaoId)
+    .single();
+
+  if (error || !inscricao) throw new Error('Inscrição não encontrada.');
+
+  const lote = Array.isArray(inscricao.lotes) ? inscricao.lotes[0] : inscricao.lotes;
+  const evento = Array.isArray(lote?.eventos) ? lote?.eventos[0] : lote?.eventos;
+
+  if (profile.role !== 'super_admin' && evento?.estabelecimento_id !== profile.estabelecimento_id) {
+    throw new Error('Esta inscrição não pertence ao seu estabelecimento.');
+  }
+
+  return { supabase, inscricao };
+}
+
+export async function aprovarCortesia(inscricaoId: string) {
+  const { supabase, inscricao } = await verificarPermissaoInscricao(inscricaoId);
+
+  if (['CANCELADO', 'ESTORNADO'].includes(inscricao.status_pagamento)) {
+    throw new Error('Não é possível aprovar cortesia para uma inscrição cancelada.');
+  }
+
+  const { error } = await supabase
+    .from('inscricoes')
+    .update({ status_pagamento: 'CORTESIA' })
+    .eq('id', inscricaoId);
+
+  if (error) throw new Error(error.message);
+  return { success: true };
+}
+
+export async function cancelarInscricao(inscricaoId: string) {
+  const { supabase, inscricao } = await verificarPermissaoInscricao(inscricaoId);
+
+  // Idempotente — se já está cancelada, não faz nada de novo (evita devolver
+  // a mesma vaga pro estoque duas vezes)
+  if (['CANCELADO', 'ESTORNADO'].includes(inscricao.status_pagamento)) {
+    return { success: true };
+  }
+
+  const { error: errCancelar } = await supabase
+    .from('inscricoes')
+    .update({ status_pagamento: 'CANCELADO' })
+    .eq('id', inscricaoId);
+
+  if (errCancelar) throw new Error(errCancelar.message);
+
+  // Devolve a vaga pro estoque do lote — sem isso, uma vaga cancelada
+  // ficaria "presa" e nunca mais poderia ser vendida.
+  const { data: lote } = await supabase
+    .from('lotes')
+    .select('quantidade_disponivel, quantidade_total')
+    .eq('id', inscricao.lote_id)
+    .single();
+
+  if (lote) {
+    const novaDisponivel = Math.min(lote.quantidade_total, lote.quantidade_disponivel + 1);
+    await supabase
+      .from('lotes')
+      .update({ quantidade_disponivel: novaDisponivel })
+      .eq('id', inscricao.lote_id);
+  }
+
+  return { success: true };
+}
+
 export async function listarParticipantes(): Promise<Inscrito[]> {
   const supabaseAuth = await createSupabaseServerClient();
   const { data: { user } } = await supabaseAuth.auth.getUser();

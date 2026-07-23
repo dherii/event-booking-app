@@ -1,13 +1,14 @@
-// src/features/admin/participantes/components/TabelaInscritos.tsx
 'use client';
 
 import { useState, useRef, useEffect, useMemo } from 'react';
+import { useRouter } from 'next/navigation';
 import {
   Search, SlidersHorizontal, MoreVertical,
-  Eye, CheckCircle, XCircle, ChevronDown,
+  Eye, CheckCircle, XCircle, ChevronDown, Loader2,
 } from 'lucide-react';
 import type { Inscrito, StatusPagamento } from '../types';
 import { MOCK_EVENTOS } from '../types';
+import { aprovarCortesia, cancelarInscricao } from '../actions';
 
 // ─── Helpers de exibição ──────────────────────────────────────────────────────
 
@@ -40,16 +41,16 @@ function formatDate(iso: string) {
 
 interface AcoesMenuProps {
   inscrito: Inscrito;
+  loading: boolean;
   onVerDetalhes:     (i: Inscrito) => void;
   onAprovarCortesia: (i: Inscrito) => void;
   onCancelar:        (i: Inscrito) => void;
 }
 
-function AcoesMenu({ inscrito, onVerDetalhes, onAprovarCortesia, onCancelar }: AcoesMenuProps) {
+function AcoesMenu({ inscrito, loading, onVerDetalhes, onAprovarCortesia, onCancelar }: AcoesMenuProps) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
-  // Fecha ao clicar fora
   useEffect(() => {
     function handler(e: MouseEvent) {
       if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
@@ -63,10 +64,11 @@ function AcoesMenu({ inscrito, onVerDetalhes, onAprovarCortesia, onCancelar }: A
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
-        className="p-1.5 rounded-lg text-muted hover:text-foreground hover:bg-border transition-colors"
+        disabled={loading}
+        className="p-1.5 rounded-lg text-muted hover:text-foreground hover:bg-border transition-colors disabled:opacity-50"
         aria-label="Ações"
       >
-        <MoreVertical size={16} />
+        {loading ? <Loader2 size={16} className="animate-spin" /> : <MoreVertical size={16} />}
       </button>
 
       {open && (
@@ -97,7 +99,7 @@ function AcoesMenu({ inscrito, onVerDetalhes, onAprovarCortesia, onCancelar }: A
                 onClick={() => { onCancelar(inscrito); setOpen(false); }}
               >
                 <XCircle size={15} className="shrink-0" />
-                Cancelar / Estornar Pix
+                Cancelar inscrição
               </button>
             </>
           )}
@@ -131,7 +133,7 @@ function DetalheModal({ inscrito, onClose }: { inscrito: Inscrito; onClose: () =
         <div className="flex items-start justify-between">
           <div>
             <h3 className="font-semibold text-foreground">{inscrito.nome}</h3>
-            <p className="text-sm text-muted">{inscrito.email}</p>
+            <p className="text-sm text-muted">{inscrito.email || 'e-mail não disponível'}</p>
           </div>
           <StatusBadge status={inscrito.status} />
         </div>
@@ -163,11 +165,14 @@ interface TabelaInscritosProps {
 }
 
 export function TabelaInscritos({ inscritos }: TabelaInscritosProps) {
+  const router = useRouter();
   const [busca,         setBusca]         = useState('');
   const [filtroEvento,  setFiltroEvento]  = useState('');
   const [filtroStatus,  setFiltroStatus]  = useState<StatusPagamento | ''>('');
   const [detalhe,       setDetalhe]       = useState<Inscrito | null>(null);
   const [lista,         setLista]         = useState<Inscrito[]>(inscritos);
+  const [loadingId,     setLoadingId]     = useState<string | null>(null);
+  const [erro,          setErro]          = useState<string | null>(null);
 
   const filtrados = useMemo(() => {
     const q = busca.toLowerCase().trim();
@@ -179,13 +184,34 @@ export function TabelaInscritos({ inscritos }: TabelaInscritosProps) {
     });
   }, [lista, busca, filtroEvento, filtroStatus]);
 
-  function aprovarCortesia(inscrito: Inscrito) {
-    setLista((prev) => prev.map((i) => i.id === inscrito.id ? { ...i, status: 'cortesia' } : i));
+  async function handleAprovarCortesia(inscrito: Inscrito) {
+    setErro(null);
+    setLoadingId(inscrito.id);
+    try {
+      await aprovarCortesia(inscrito.id);
+      setLista((prev) => prev.map((i) => i.id === inscrito.id ? { ...i, status: 'cortesia' } : i));
+      router.refresh();
+    } catch (err) {
+      setErro(err instanceof Error ? err.message : 'Erro ao aprovar cortesia.');
+    } finally {
+      setLoadingId(null);
+    }
   }
 
-  function cancelar(inscrito: Inscrito) {
-    if (!confirm(`Cancelar a inscrição de ${inscrito.nome}? Esta ação não pode ser desfeita.`)) return;
-    setLista((prev) => prev.map((i) => i.id === inscrito.id ? { ...i, status: 'cancelado' } : i));
+  async function handleCancelar(inscrito: Inscrito) {
+    if (!confirm(`Cancelar a inscrição de ${inscrito.nome}? A vaga volta pro estoque do lote.`)) return;
+
+    setErro(null);
+    setLoadingId(inscrito.id);
+    try {
+      await cancelarInscricao(inscrito.id);
+      setLista((prev) => prev.map((i) => i.id === inscrito.id ? { ...i, status: 'cancelado' } : i));
+      router.refresh();
+    } catch (err) {
+      setErro(err instanceof Error ? err.message : 'Erro ao cancelar inscrição.');
+    } finally {
+      setLoadingId(null);
+    }
   }
 
   const statusOpcoes: { value: StatusPagamento | ''; label: string }[] = [
@@ -198,9 +224,12 @@ export function TabelaInscritos({ inscritos }: TabelaInscritosProps) {
 
   return (
     <>
+      {erro && (
+        <p role="alert" className="mb-4 bg-error-bg text-error-fg text-sm px-4 py-3 rounded-lg">{erro}</p>
+      )}
+
       {/* Barra de filtros */}
       <div className="flex flex-col sm:flex-row gap-3 mb-4">
-        {/* Busca */}
         <div className="relative flex-1">
           <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted pointer-events-none" />
           <input
@@ -212,7 +241,6 @@ export function TabelaInscritos({ inscritos }: TabelaInscritosProps) {
           />
         </div>
 
-        {/* Filtro por evento */}
         <div className="relative">
           <select
             className="input-base text-sm pr-8 appearance-none"
@@ -227,7 +255,6 @@ export function TabelaInscritos({ inscritos }: TabelaInscritosProps) {
           <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted pointer-events-none" />
         </div>
 
-        {/* Filtro por status */}
         <div className="relative">
           <SlidersHorizontal size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted pointer-events-none" />
           <select
@@ -243,7 +270,6 @@ export function TabelaInscritos({ inscritos }: TabelaInscritosProps) {
         </div>
       </div>
 
-      {/* Contagem */}
       <p className="text-xs text-muted mb-3">
         {filtrados.length} inscrito{filtrados.length !== 1 ? 's' : ''} encontrado{filtrados.length !== 1 ? 's' : ''}
       </p>
@@ -276,7 +302,7 @@ export function TabelaInscritos({ inscritos }: TabelaInscritosProps) {
                   <tr key={inscrito.id} className="hover:bg-border/30 transition-colors">
                     <td className="px-4 py-3 whitespace-nowrap">
                       <p className="font-medium text-foreground">{inscrito.nome}</p>
-                      <p className="text-xs text-muted">{inscrito.email}</p>
+                      {inscrito.email && <p className="text-xs text-muted">{inscrito.email}</p>}
                     </td>
                     <td className="px-4 py-3 whitespace-nowrap">
                       <p className="text-foreground">{inscrito.evento}</p>
@@ -302,9 +328,10 @@ export function TabelaInscritos({ inscritos }: TabelaInscritosProps) {
                     <td className="px-4 py-3 text-right">
                       <AcoesMenu
                         inscrito={inscrito}
+                        loading={loadingId === inscrito.id}
                         onVerDetalhes={setDetalhe}
-                        onAprovarCortesia={aprovarCortesia}
-                        onCancelar={cancelar}
+                        onAprovarCortesia={handleAprovarCortesia}
+                        onCancelar={handleCancelar}
                       />
                     </td>
                   </tr>
@@ -315,7 +342,6 @@ export function TabelaInscritos({ inscritos }: TabelaInscritosProps) {
         </div>
       </div>
 
-      {/* Modal de detalhes */}
       {detalhe && <DetalheModal inscrito={detalhe} onClose={() => setDetalhe(null)} />}
     </>
   );
