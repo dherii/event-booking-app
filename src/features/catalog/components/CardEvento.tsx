@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { MapPin, Heart, ArrowRight } from 'lucide-react';
 import { createSupabaseBrowserClient } from '@/src/config/supabase-browser';
+import { toggleFavorito } from '../actions';
 
 interface Lote {
   id: string;
@@ -32,6 +33,7 @@ interface Evento {
 
 interface CardEventoProps {
   evento: Evento;
+  favoritadoInicial?: boolean;
 }
 
 /* ============================================================
@@ -77,10 +79,11 @@ function formatarDataBadge(iso: string) {
    COMPONENTE
    ============================================================ */
 
-export default function CardEvento({ evento }: CardEventoProps) {
+export default function CardEvento({ evento, favoritadoInicial = false }: CardEventoProps) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
-  const [favorito, setFavorito] = useState(false);
+  const [favorito, setFavorito] = useState(favoritadoInicial);
+  const [favoritando, setFavoritando] = useState(false);
 
   const loteAtivo = evento.lotes?.[0];
   const estabelecimento = Array.isArray(evento.estabelecimentos)
@@ -101,6 +104,32 @@ export default function CardEvento({ evento }: CardEventoProps) {
 
   function irParaEvento() {
     router.push(`/eventos/${evento.id}`);
+  }
+
+  async function handleFavoritar(e: React.MouseEvent) {
+    e.stopPropagation();
+    if (favoritando) return;
+
+    const supabase = createSupabaseBrowserClient();
+    const { data: { session } } = await supabase.auth.getSession();
+
+    if (!session) {
+      router.push(`/auth/login?redirect=${encodeURIComponent(`/eventos/${evento.id}`)}`);
+      return;
+    }
+
+    setFavoritando(true);
+    const anterior = favorito;
+    setFavorito(!anterior); // otimista
+
+    try {
+      const resultado = await toggleFavorito(evento.id);
+      setFavorito(resultado.favoritado);
+    } catch {
+      setFavorito(anterior); // reverte se der erro
+    } finally {
+      setFavoritando(false);
+    }
   }
 
   async function handleComprar() {
@@ -199,11 +228,9 @@ export default function CardEvento({ evento }: CardEventoProps) {
         <button
           type="button"
           aria-label="Favoritar evento"
-          onClick={(e) => {
-            e.stopPropagation();
-            setFavorito(!favorito);
-          }}
-          className="absolute bottom-3 right-3 flex h-9 w-9 items-center justify-center rounded-full border border-white/15 bg-black/50 text-white backdrop-blur-md transition-all hover:scale-110 hover:border-white/30"
+          onClick={handleFavoritar}
+          disabled={favoritando}
+          className="absolute bottom-3 right-3 flex h-9 w-9 items-center justify-center rounded-full border border-white/15 bg-black/50 text-white backdrop-blur-md transition-all hover:scale-110 hover:border-white/30 disabled:opacity-70"
         >
           <Heart size={16} fill={favorito ? 'currentColor' : 'none'} className={favorito ? 'text-accent-pink' : ''} />
         </button>

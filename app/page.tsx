@@ -1,7 +1,9 @@
+import { Suspense } from 'react';
 import { supabase } from '@/src/config/supabase';
 import { createSupabaseServerClient } from '@/src/config/supabase-server';
 import { CatalogoClient } from '@/src/features/catalog/components/CatalogoClient';
 import { SiteHeader } from '@/src/features/catalog/components/SiteHeader';
+import { listarMeusFavoritosIds } from '@/src/features/catalog/actions';
 import { Ticket } from 'lucide-react';
 
 export const revalidate = 0;
@@ -14,17 +16,22 @@ export default async function HomePage() {
   } = await supabaseAuth.auth.getUser();
 
   let temPainelAdmin = false;
+  let userNome: string | null = null;
+  let avatarUrl: string | null = null;
 
   if (user) {
     const { data: profile } = await supabaseAuth
       .from('profiles')
-      .select('role')
+      .select('role, nome, avatar_url')
       .eq('id', user.id)
       .single();
 
     temPainelAdmin =
       !!profile &&
       ['super_admin', 'dono_estabelecimento', 'staff_checkin'].includes(profile.role);
+
+    userNome = profile?.nome ?? user.email ?? null;
+    avatarUrl = profile?.avatar_url ?? null;
   }
 
   const { data: eventos, error } = await supabase
@@ -36,12 +43,15 @@ export default async function HomePage() {
     `)
     .order('created_at', { ascending: false });
 
+  const favoritosIds = user ? await listarMeusFavoritosIds() : [];
+
   return (
     <main className="min-h-screen bg-background text-foreground">
-      <SiteHeader isLoggedIn={!!user} temPainelAdmin={temPainelAdmin} />
+      <Suspense fallback={<div className="h-16 border-b border-border" />}>
+        <SiteHeader isLoggedIn={!!user} temPainelAdmin={temPainelAdmin} userNome={userNome} avatarUrl={avatarUrl} />
+      </Suspense>
 
       <div className="relative mx-auto max-w-7xl px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
-        {/* Glow decorativo */}
         <div className="pointer-events-none absolute left-1/4 top-0 -z-10 h-72 w-72 rounded-full bg-accent-purple/10 blur-3xl" />
         <div className="pointer-events-none absolute right-1/4 top-40 -z-10 h-64 w-64 rounded-full bg-accent-pink/5 blur-3xl" />
 
@@ -62,7 +72,9 @@ export default async function HomePage() {
             </p>
           </div>
         ) : (
-          <CatalogoClient eventos={eventos} />
+          <Suspense fallback={<div className="min-h-[400px]" />}>
+            <CatalogoClient eventos={eventos} favoritosIds={favoritosIds} />
+          </Suspense>
         )}
       </div>
     </main>

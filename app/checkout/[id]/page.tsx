@@ -2,6 +2,7 @@ import { getSupabaseAdmin } from '@/src/config/supabase';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import PixCopyButton from '@/src/features/checkout/components/PixCopyButton';
+import { Clock } from 'lucide-react';
 
 interface CheckoutPageProps {
   params: Promise<{ id: string }>;
@@ -9,9 +10,7 @@ interface CheckoutPageProps {
 
 export const revalidate = 0;
 
-export default async function CheckoutPage({
-  params,
-}: CheckoutPageProps) {
+export default async function CheckoutPage({ params }: CheckoutPageProps) {
   const { id } = await params;
 
   const supabaseAdmin = getSupabaseAdmin();
@@ -30,19 +29,17 @@ export default async function CheckoutPage({
   const valorTotal = Number(inscricao.lotes?.preco || 0);
 
   return (
-    <main className="min-h-screen bg-gray-950 text-white flex flex-col items-center justify-center p-4">
-      <div className="max-w-md w-full bg-gray-900 border border-gray-800 rounded-2xl p-6 text-center shadow-xl">
-        <span className="text-xs font-semibold bg-yellow-500/10 text-yellow-500 px-3 py-1 rounded-full uppercase tracking-wider">
+    <main className="min-h-screen bg-background text-foreground flex flex-col items-center justify-center p-4">
+      <div className="max-w-md w-full clubber-card p-6 text-center">
+        <span className="inline-flex items-center gap-1.5 text-xs font-bold bg-warning-bg text-warning-fg px-3 py-1 rounded-full uppercase tracking-wider">
+          <Clock size={12} />
           Aguardando Pagamento
         </span>
 
-        <h1 className="text-2xl font-bold mt-4 text-white">
-          Falta pouco!
-        </h1>
+        <h1 className="text-2xl font-black mt-4">Falta pouco!</h1>
 
-        <p className="text-gray-400 text-sm mt-1">
-          Reserve seu lugar na{' '}
-          <strong>{evento?.nome || 'Inscrição'}</strong>
+        <p className="text-muted text-sm mt-1">
+          Reserve seu lugar em <strong className="text-foreground">{evento?.nome || 'Inscrição'}</strong>
         </p>
 
         {/* QR Code Simulado */}
@@ -54,34 +51,26 @@ export default async function CheckoutPage({
           </div>
         </div>
 
-        <div className="text-left bg-gray-950 p-4 rounded-xl border border-gray-800 mb-6">
+        <div className="text-left bg-background p-4 rounded-xl border border-border mb-6">
           <div className="flex justify-between text-sm mb-3">
-            <span className="text-gray-500">
-              Total a pagar:
-            </span>
-
-            <span className="font-bold text-green-400">
-              R$ {valorTotal.toFixed(2)}
-            </span>
+            <span className="text-muted">Total a pagar:</span>
+            <span className="font-bold text-success-fg">R$ {valorTotal.toFixed(2)}</span>
           </div>
 
           <div className="flex flex-col gap-2 text-xs">
-            <span className="text-gray-500">
-              Código Copia e Cola:
-            </span>
-
+            <span className="text-muted">Código Copia e Cola:</span>
             <PixCopyButton codigo={inscricao.txid_pix} />
           </div>
         </div>
 
         <Link
           href="/"
-          className="w-full block bg-blue-600 hover:bg-blue-500 text-white text-center font-semibold py-2.5 px-4 rounded-lg transition-all active:scale-[0.99]"
+          className="w-full block bg-primary hover:bg-primary-hover text-primary-fg text-center font-bold py-2.5 px-4 rounded-lg shadow-neon transition-all active:scale-[0.99]"
         >
           Voltar ao Catálogo
         </Link>
 
-        <p className="text-xs text-gray-500 mt-4">
+        <p className="text-xs text-muted mt-4">
           O lote será liberado imediatamente após a confirmação do Pix.
         </p>
       </div>

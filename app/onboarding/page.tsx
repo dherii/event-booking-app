@@ -22,11 +22,18 @@ export default async function OnboardingPage() {
   }
 
   return (
-    <main className="min-h-screen bg-gray-950 text-white flex items-center justify-center p-4">
+    <main className="min-h-screen bg-background text-foreground flex items-center justify-center p-4">
       <div className="w-full max-w-md">
+        <div className="flex items-center justify-center gap-2 mb-6">
+          <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-accent-purple to-accent-pink flex items-center justify-center shadow-purple">
+            <span className="text-white font-black text-sm">C</span>
+          </div>
+          <span className="text-lg font-black text-brand-gradient">Clubber</span>
+        </div>
+
         <div className="mb-6 text-center">
-          <h1 className="text-2xl font-bold text-white">Cadastre seu estabelecimento</h1>
-          <p className="text-sm text-gray-400 mt-2">
+          <h1 className="text-2xl font-black">Cadastre seu estabelecimento</h1>
+          <p className="text-sm text-muted mt-2">
             Crie o painel da sua casa de eventos e comece a vender ingressos, mesas e camarotes.
           </p>
         </div>
