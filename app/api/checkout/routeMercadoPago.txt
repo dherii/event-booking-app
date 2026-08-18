@@ -1,0 +1,262 @@
+// app/api/checkout/route.ts
+// Cria uma Preference do Mercado Pago Checkout Pro com split 90/10.
+//
+// Fluxo:
+//   1. Autentica via sessão (cookie)
+//   2. Checa inscrição duplicada
+//   3. Reserva vaga atomicamente via RPC reservar_vaga
+//   4. Cria inscrição PENDENTE
+//   5. Renova token MP do produtor se expirado
+//   6. Cria Preference com marketplace_fee (juros repassados ao comprador pelo MP)
+//   7. Salva mp_preference_id na inscrição
+//   8. Retorna init_point para o client redirecionar
+
+import { NextResponse }              from 'next/server';
+import { getSupabaseAdmin }          from '@/src/config/supabase';
+import { createSupabaseServerClient } from '@/src/config/supabase-server';
+import {
+  calcularSplit,
+  criarPreference,
+  renovarToken,
+} from '@/src/lib/mercadopago/client';
+
+// ─── Tipos ────────────────────────────────────────────────────────────────────
+
+interface CheckoutBody {
+  loteId: string;
+}
+
+// ─── Helper: token válido ou renovado ────────────────────────────────────────
+
+async function resolverToken(estab: {
+  id: string;
+  mp_access_token: string;
+  mp_refresh_token: string | null;
+  mp_token_expires_at: string | null;
+}): Promise<string> {
+  if (!estab.mp_access_token) {
+    throw new Error('Estabelecimento sem conta Mercado Pago vinculada.');
+  }
+
+  // Renova se expirar nos próximos 5 minutos
+  const expira = estab.mp_token_expires_at
+    ? new Date(estab.mp_token_expires_at).getTime()
+    : 0;
+  const emBreve = Date.now() + 5 * 60 * 1000;
+
+  if (expira < emBreve && estab.mp_refresh_token) {
+    const novosTokens = await renovarToken(estab.mp_refresh_token);
+
+    const supabase = getSupabaseAdmin();
+    await supabase
+      .from('estabelecimentos')
+      .update({
+        mp_access_token:     novosTokens.access_token,
+        mp_refresh_token:    novosTokens.refresh_token,
+        mp_token_expires_at: new Date(Date.now() + novosTokens.expires_in * 1000).toISOString(),
+      })
+      .eq('id', estab.id);
+
+    return novosTokens.access_token;
+  }
+
+  return estab.mp_access_token;
+}
+
+// ─── Handler ──────────────────────────────────────────────────────────────────
+
+export async function POST(request: Request) {
+  try {
+    // ── 1. Autenticação ───────────────────────────────────────────────────────
+    const supabaseAuth = await createSupabaseServerClient();
+    const { data: { user } } = await supabaseAuth.auth.getUser();
+
+    if (!user) {
+      return NextResponse.json(
+        { error: 'Você precisa estar logado para comprar um ingresso.', requiresLogin: true },
+        { status: 401 },
+      );
+    }
+
+    // ── 2. Valida corpo ───────────────────────────────────────────────────────
+    let body: CheckoutBody;
+    try { body = await request.json(); }
+    catch { return NextResponse.json({ error: 'Corpo inválido.' }, { status: 400 }); }
+
+    const { loteId } = body;
+    if (!loteId) return NextResponse.json({ error: 'Lote não informado.' }, { status: 400 });
+
+    const supabase = getSupabaseAdmin();
+
+    // ── 3. Busca lote + evento + dados MP do estabelecimento ─────────────────
+    const { data: lote, error: loteError } = await supabase
+      .from('lotes')
+      .select(`
+        id, nome, tipo, preco,
+        eventos!inner (
+          id, nome, data_inicio,
+          estabelecimentos!inner (
+            id, nome,
+            mp_user_id,
+            mp_access_token,
+            mp_refresh_token,
+            mp_token_expires_at
+          )
+        )
+      `)
+      .eq('id', loteId)
+      .single();
+
+    if (loteError || !lote) {
+      return NextResponse.json({ error: 'Lote não encontrado.' }, { status: 404 });
+    }
+
+    const evento        = Array.isArray(lote.eventos) ? lote.eventos[0] : lote.eventos;
+    const estabelecimento = Array.isArray(evento?.estabelecimentos)
+      ? evento.estabelecimentos[0]
+      : evento?.estabelecimentos;
+
+    if (!estabelecimento?.mp_access_token) {
+      return NextResponse.json(
+        { error: 'O organizador ainda não vinculou a conta Mercado Pago. Contate o organizador.' },
+        { status: 422 },
+      );
+    }
+
+    // ── 4. Idempotência ───────────────────────────────────────────────────────
+    const { data: inscricaoExistente } = await supabase
+      .from('inscricoes')
+      .select('id, status_pagamento')
+      .eq('usuario_id', user.id)
+      .eq('lote_id', loteId)
+      .in('status_pagamento', ['PENDENTE', 'PAGO'])
+      .maybeSingle();
+
+    if (inscricaoExistente) {
+      return NextResponse.json(
+        { error: 'Você já tem uma inscrição ativa para este lote.' },
+        { status: 400 },
+      );
+    }
+
+    // ── 5. Reserva atômica de vaga ────────────────────────────────────────────
+    const { data: reserva, error: reservaError } = await supabase
+      .rpc('reservar_vaga', { p_lote_id: loteId })
+      .single();
+
+    if (reservaError) {
+      console.error('[checkout] Erro ao reservar vaga:', reservaError);
+      return NextResponse.json({ error: 'Erro ao reservar seu ingresso.' }, { status: 500 });
+    }
+
+    const resultado = reserva as { sucesso: boolean; preco: number | null };
+
+    if (!resultado.sucesso) {
+      return NextResponse.json({ error: 'Ingressos esgotados para este lote!' }, { status: 400 });
+    }
+
+    const precoBRL = Number(resultado.preco ?? lote.preco ?? 0);
+
+    // ── 6. Ingresso gratuito — emite direto ───────────────────────────────────
+    if (precoBRL === 0) {
+      const { data: inscGratis, error: errGratis } = await supabase
+        .from('inscricoes')
+        .insert({ usuario_id: user.id, lote_id: loteId, status_pagamento: 'PAGO' })
+        .select()
+        .single();
+
+      if (errGratis || !inscGratis) {
+        await supabase.rpc('devolver_vaga', { p_lote_id: loteId });
+        return NextResponse.json({ error: 'Erro ao criar inscrição gratuita.' }, { status: 500 });
+      }
+
+      await supabase
+        .from('ingressos_validacao')
+        .insert({ inscricao_id: inscGratis.id, utilizado: false });
+
+      return NextResponse.json({
+        success:     true,
+        gratuito:    true,
+        inscricaoId: inscGratis.id,
+        redirectUrl: `${process.env.NEXT_PUBLIC_APP_URL}/checkout/${inscGratis.id}?status=pago`,
+      }, { status: 201 });
+    }
+
+    // ── 7. Calcula split ──────────────────────────────────────────────────────
+    const split = calcularSplit(precoBRL);
+
+    // ── 8. Cria inscrição PENDENTE ────────────────────────────────────────────
+    const { data: inscricao, error: inscricaoError } = await supabase
+      .from('inscricoes')
+      .insert({ usuario_id: user.id, lote_id: loteId, status_pagamento: 'PENDENTE' })
+      .select()
+      .single();
+
+    if (inscricaoError || !inscricao) {
+      await supabase.rpc('devolver_vaga', { p_lote_id: loteId });
+      console.error('[checkout] Erro ao criar inscrição:', inscricaoError);
+      return NextResponse.json({ error: 'Erro ao gerar pedido de inscrição.' }, { status: 500 });
+    }
+
+    // ── 9. Resolve token MP (renova se expirado) ──────────────────────────────
+    let accessToken: string;
+    try {
+      accessToken = await resolverToken(estabelecimento);
+    } catch {
+      await supabase.rpc('devolver_vaga', { p_lote_id: loteId });
+      await supabase.from('inscricoes').delete().eq('id', inscricao.id);
+      return NextResponse.json(
+        { error: 'O organizador não configurou o recebimento de pagamentos corretamente.' },
+        { status: 422 },
+      );
+    }
+
+    // ── 10. Cria Preference no Mercado Pago ───────────────────────────────────
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL!;
+    let preference;
+    try {
+      preference = await criarPreference({
+        nomeItem:            `${lote.nome} — ${evento?.nome ?? 'Evento'}`,
+        descricaoItem:       `Ingresso tipo ${lote.tipo ?? 'ingresso'} para ${evento?.nome ?? 'o evento'}`,
+        precoBRL,
+        inscricaoId:         inscricao.id,
+        loteId,
+        usuarioEmail:        user.email!,
+        producerAccessToken: accessToken,
+        marketplaceFeeBRL:   split.marketplaceFeeBRL,
+        successUrl: `${appUrl}/checkout/${inscricao.id}?status=pago`,
+        failureUrl: `${appUrl}/checkout/${inscricao.id}?status=falhou`,
+        pendingUrl: `${appUrl}/checkout/${inscricao.id}?status=pendente`,
+        notificationUrl: `${appUrl}/api/webhook/mercadopago`,
+      });
+    } catch (mpError) {
+      await supabase.rpc('devolver_vaga', { p_lote_id: loteId });
+      await supabase.from('inscricoes').delete().eq('id', inscricao.id);
+      console.error('[checkout] Erro no MP:', mpError);
+      const msg = mpError instanceof Error ? mpError.message : 'Erro ao gerar link de pagamento.';
+      return NextResponse.json({ error: msg }, { status: 502 });
+    }
+
+    // ── 11. Salva o preference_id para correlação no webhook ──────────────────
+    await supabase
+      .from('inscricoes')
+      .update({ mp_preference_id: preference.id })
+      .eq('id', inscricao.id);
+
+    // Em produção usa init_point; em sandbox usa sandbox_init_point
+    const isProd   = process.env.NODE_ENV === 'production';
+    const checkoutUrl = isProd ? preference.init_point : preference.sandbox_init_point;
+
+    return NextResponse.json({
+      success:       true,
+      inscricaoId:   inscricao.id,
+      checkoutUrl,
+      preferenceId:  preference.id,
+    }, { status: 201 });
+
+  } catch (error) {
+    console.error('[checkout] Erro inesperado:', error);
+    const msg = error instanceof Error ? error.message : 'Erro interno.';
+    return NextResponse.json({ error: msg }, { status: 500 });
+  }
+}

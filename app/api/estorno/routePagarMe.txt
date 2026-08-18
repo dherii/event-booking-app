@@ -1,0 +1,180 @@
+// // app/api/estorno/route.ts
+// // Endpoint de estorno solicitado pelo usuário.
+// //
+// // Regras de negócio:
+// //   - Só estorna se o evento começa em mais de 12h a partir de agora.
+// //   - Chama a API de Refund da Pagar.me (reverte o split automaticamente).
+// //   - Marca a inscrição como ESTORNADO.
+// //   - Remove o ingresso_validacao para barrar check-in.
+// //   - Invalida transferencia_token pendente.
+// //   - Devolve a vaga ao estoque via RPC devolver_vaga.
+// //
+// // Nota: o webhook charge.refunded da Pagar.me também atualiza o status,
+// // garantindo idempotência mesmo em caso de retry.
+
+// import { NextResponse }              from 'next/server';
+// import { getSupabaseAdmin }          from '@/src/config/supabase';
+// import { createSupabaseServerClient } from '@/src/config/supabase-server';
+// import { criarEstorno }              from '@/src/lib/pagarme/client';
+
+// /** Janela mínima antes do início do evento para permitir estorno */
+// const JANELA_ESTORNO_HORAS = 12;
+
+// export async function POST(request: Request) {
+//   try {
+//     // ── 1. Autenticação ───────────────────────────────────────────────────────
+//     const supabaseAuth = await createSupabaseServerClient();
+//     const { data: { user } } = await supabaseAuth.auth.getUser();
+
+//     if (!user) {
+//       return NextResponse.json({ error: 'Não autenticado.' }, { status: 401 });
+//     }
+
+//     // ── 2. Corpo da requisição ────────────────────────────────────────────────
+//     let body: { inscricaoId: string };
+//     try {
+//       body = await request.json();
+//     } catch {
+//       return NextResponse.json({ error: 'Corpo da requisição inválido.' }, { status: 400 });
+//     }
+
+//     const { inscricaoId } = body;
+//     if (!inscricaoId) {
+//       return NextResponse.json({ error: 'inscricaoId não informado.' }, { status: 400 });
+//     }
+
+//     const supabase = getSupabaseAdmin();
+
+//     // ── 3. Busca inscrição com join no evento para checar a janela ────────────
+//     const { data: inscricao, error: fetchError } = await supabase
+//       .from('inscricoes')
+//       .select(`
+//         id,
+//         usuario_id,
+//         lote_id,
+//         status_pagamento,
+//         pagarme_charge_id,
+//         transferencia_token,
+//         lotes!inner (
+//           preco,
+//           eventos!inner ( id, nome, data_inicio )
+//         )
+//       `)
+//       .eq('id', inscricaoId)
+//       .single();
+
+//     if (fetchError || !inscricao) {
+//       return NextResponse.json({ error: 'Inscrição não encontrada.' }, { status: 404 });
+//     }
+
+//     // ── 4. Autorização — só o dono da inscrição pode estornar ─────────────────
+//     if (inscricao.usuario_id !== user.id) {
+//       return NextResponse.json({ error: 'Acesso negado.' }, { status: 403 });
+//     }
+
+//     // ── 5. Idempotência ───────────────────────────────────────────────────────
+//     if (['ESTORNADO', 'CANCELADO'].includes(inscricao.status_pagamento)) {
+//       return NextResponse.json({ success: true, message: 'Inscrição já cancelada.' });
+//     }
+
+//     if (inscricao.status_pagamento !== 'PAGO') {
+//       return NextResponse.json(
+//         { error: 'Apenas inscrições com pagamento confirmado podem ser estornadas.' },
+//         { status: 422 },
+//       );
+//     }
+
+//     // ── 6. Verifica a janela de 12h ───────────────────────────────────────────
+//     const lote  = Array.isArray(inscricao.lotes) ? inscricao.lotes[0] : inscricao.lotes;
+//     const evento = Array.isArray(lote?.eventos)  ? lote?.eventos[0]   : lote?.eventos;
+
+//     if (!evento?.data_inicio) {
+//       return NextResponse.json({ error: 'Dados do evento não encontrados.' }, { status: 422 });
+//     }
+
+//     const agora          = Date.now();
+//     const dataEvento     = new Date(evento.data_inicio).getTime();
+//     const horasAteEvento = (dataEvento - agora) / (1000 * 60 * 60);
+
+//     if (horasAteEvento < JANELA_ESTORNO_HORAS) {
+//       return NextResponse.json(
+//         {
+//           error: `Estorno indisponível. O evento "${evento.nome}" começa em menos de ${JANELA_ESTORNO_HORAS}h. ` +
+//                  `Entre em contato diretamente com o estabelecimento para solicitações fora do prazo.`,
+//           horasRestantes: Math.max(0, Math.round(horasAteEvento)),
+//           codigo:         'FORA_DA_JANELA',
+//         },
+//         { status: 422 },
+//       );
+//     }
+
+//     // ── 7. Chama a API de Refund da Pagar.me ──────────────────────────────────
+//     //    Só chama se há um charge_id registrado (pagamento real, não cortesia/grátis)
+//     if (inscricao.pagarme_charge_id) {
+//       try {
+//         const refund = await criarEstorno(
+//           inscricao.pagarme_charge_id,
+//           `Cancelamento solicitado pelo usuário ${user.id} — inscrição ${inscricaoId}`,
+//         );
+
+//         // A Pagar.me pode retornar status 'pending' (assíncrono) ou 'refunded' (síncrono)
+//         if (refund.status === 'failed') {
+//           console.error('[estorno] Refund recusado pela Pagar.me:', refund);
+//           return NextResponse.json(
+//             { error: 'O estorno foi recusado pelo gateway de pagamento. Tente novamente ou contate o suporte.' },
+//             { status: 502 },
+//           );
+//         }
+
+//         console.log(`[estorno] Refund Pagar.me: ${refund.id} → status ${refund.status}`);
+//       } catch (pagarmeError) {
+//         console.error('[estorno] Erro ao chamar Pagar.me Refund:', pagarmeError);
+//         return NextResponse.json(
+//           { error: 'Erro ao processar o estorno no gateway. Tente novamente.' },
+//           { status: 502 },
+//         );
+//       }
+//     }
+//     // Se não há charge_id (ingresso gratuito), apenas atualiza o status.
+
+//     // ── 8. Atualiza o banco ───────────────────────────────────────────────────
+//     const { error: updateError } = await supabase
+//       .from('inscricoes')
+//       .update({
+//         status_pagamento:    'ESTORNADO',
+//         transferencia_token: null,   // invalida link de transferência pendente
+//       })
+//       .eq('id', inscricaoId);
+
+//     if (updateError) {
+//       throw new Error(`Erro ao atualizar inscrição: ${updateError.message}`);
+//     }
+
+//     // Remove o ingresso de validação → impede check-in físico
+//     await supabase
+//       .from('ingressos_validacao')
+//       .delete()
+//       .eq('inscricao_id', inscricaoId);
+
+//     // ── 9. Devolve a vaga ao estoque ─────────────────────────────────────────
+//     const { error: errDevolucao } = await supabase
+//       .rpc('devolver_vaga', { p_lote_id: inscricao.lote_id });
+
+//     if (errDevolucao) {
+//       // Não falha a requisição — o estorno já foi feito. Log para monitoramento.
+//       console.error('[estorno] Erro ao devolver vaga ao estoque:', errDevolucao);
+//     }
+
+//     console.log(`[estorno] Inscrição ${inscricaoId} estornada com sucesso.`);
+
+//     return NextResponse.json({
+//       success: true,
+//       message: 'Estorno realizado com sucesso. O valor será devolvido em até 10 dias úteis.',
+//     });
+
+//   } catch (error) {
+//     console.error('[estorno] Erro inesperado:', error);
+//     const msg = error instanceof Error ? error.message : 'Erro interno do servidor.';
+//     return NextResponse.json({ error: msg }, { status: 500 });
+//   }
+// }
