@@ -1,0 +1,231 @@
+// // app/api/checkout/route.ts
+// // Substitui a versão anterior (Pix simulado).
+// // Fluxo:
+// //   1. Autentica o usuário pela sessão (cookie)
+// //   2. Checa inscrição duplicada
+// //   3. Reserva a vaga atomicamente via RPC reservar_vaga
+// //   4. Cria a inscrição PENDENTE no banco
+// //   5. Cria o Payment Link na Pagar.me (com split + juros comprador)
+// //   6. Salva o pagarme_payment_link_id na inscrição
+// //   7. Retorna a URL de checkout para o client redirecionar
+
+// import { NextResponse }              from 'next/server';
+// import { getSupabaseAdmin }          from '@/src/config/supabase';
+// import { createSupabaseServerClient } from '@/src/config/supabase-server';
+// import { calcularSplit, criarPaymentLink } from '@/src/lib/pagarme/client';
+
+// // ─── Tipos ────────────────────────────────────────────────────────────────────
+
+// interface CheckoutBody {
+//   loteId:    string;
+//   parcelas?: number;   // 1–12, default 1 (à vista / Pix)
+// }
+
+// // ─── Handler ──────────────────────────────────────────────────────────────────
+
+// export async function POST(request: Request) {
+//   try {
+//     // ── 1. Autenticação via cookie de sessão ──────────────────────────────────
+//     const supabaseAuth = await createSupabaseServerClient();
+//     const { data: { user } } = await supabaseAuth.auth.getUser();
+
+//     if (!user) {
+//       return NextResponse.json(
+//         { error: 'Você precisa estar logado para comprar um ingresso.', requiresLogin: true },
+//         { status: 401 },
+//       );
+//     }
+
+//     // ── 2. Valida corpo ───────────────────────────────────────────────────────
+//     let body: CheckoutBody;
+//     try {
+//       body = await request.json();
+//     } catch {
+//       return NextResponse.json({ error: 'Corpo da requisição inválido.' }, { status: 400 });
+//     }
+
+//     const { loteId, parcelas = 1 } = body;
+
+//     if (!loteId) {
+//       return NextResponse.json({ error: 'Lote não informado.' }, { status: 400 });
+//     }
+
+//     if (!Number.isInteger(parcelas) || parcelas < 1 || parcelas > 12) {
+//       return NextResponse.json({ error: 'Número de parcelas inválido (1–12).' }, { status: 400 });
+//     }
+
+//     const supabase = getSupabaseAdmin();
+
+//     // ── 3. Busca lote + evento + recebedor_id do estabelecimento ─────────────
+//     const { data: lote, error: loteError } = await supabase
+//       .from('lotes')
+//       .select(`
+//         id,
+//         nome,
+//         tipo,
+//         preco,
+//         eventos!inner (
+//           id,
+//           nome,
+//           data_inicio,
+//           estabelecimentos!inner (
+//             id,
+//             nome,
+//             pagarme_recebedor_id
+//           )
+//         )
+//       `)
+//       .eq('id', loteId)
+//       .single();
+
+//     if (loteError || !lote) {
+//       return NextResponse.json({ error: 'Lote não encontrado.' }, { status: 404 });
+//     }
+
+//     const evento         = Array.isArray(lote.eventos) ? lote.eventos[0] : lote.eventos;
+//     const estabelecimento = Array.isArray(evento?.estabelecimentos)
+//       ? evento.estabelecimentos[0]
+//       : evento?.estabelecimentos;
+
+//     if (!estabelecimento?.pagarme_recebedor_id) {
+//       return NextResponse.json(
+//         { error: 'O estabelecimento ainda não configurou o recebimento de pagamentos. Contate o organizador.' },
+//         { status: 422 },
+//       );
+//     }
+
+//     const recebedorId: string = estabelecimento.pagarme_recebedor_id;
+
+//     // ── 4. Idempotência — inscrição duplicada ─────────────────────────────────
+//     const { data: inscricaoExistente } = await supabase
+//       .from('inscricoes')
+//       .select('id, status_pagamento')
+//       .eq('usuario_id', user.id)
+//       .eq('lote_id', loteId)
+//       .in('status_pagamento', ['PENDENTE', 'PAGO'])
+//       .maybeSingle();
+
+//     if (inscricaoExistente) {
+//       return NextResponse.json(
+//         { error: 'Você já tem uma inscrição ativa para este lote.' },
+//         { status: 400 },
+//       );
+//     }
+
+//     // ── 5. Reserva atômica de vaga ────────────────────────────────────────────
+//     const { data: reserva, error: reservaError } = await supabase
+//       .rpc('reservar_vaga', { p_lote_id: loteId })
+//       .single();
+
+//     if (reservaError) {
+//       console.error('[checkout] Erro ao reservar vaga:', reservaError);
+//       return NextResponse.json({ error: 'Erro ao reservar seu ingresso.' }, { status: 500 });
+//     }
+
+//     const resultado = reserva as { sucesso: boolean; preco: number | null };
+
+//     if (!resultado.sucesso) {
+//       return NextResponse.json({ error: 'Ingressos esgotados para este lote!' }, { status: 400 });
+//     }
+
+//     const precoBRL = Number(resultado.preco ?? lote.preco ?? 0);
+
+//     // ── 6. Ingresso gratuito — emite direto sem passar pelo gateway ───────────
+//     if (precoBRL === 0) {
+//       const { data: inscricaoGratis, error: errGratis } = await supabase
+//         .from('inscricoes')
+//         .insert({
+//           usuario_id:       user.id,
+//           lote_id:          loteId,
+//           status_pagamento: 'PAGO',
+//           txid_pix:         null,
+//           parcelas:         1,
+//         })
+//         .select()
+//         .single();
+
+//       if (errGratis || !inscricaoGratis) {
+//         await supabase.rpc('devolver_vaga', { p_lote_id: loteId });
+//         return NextResponse.json({ error: 'Erro ao criar inscrição gratuita.' }, { status: 500 });
+//       }
+
+//       await supabase
+//         .from('ingressos_validacao')
+//         .insert({ inscricao_id: inscricaoGratis.id, utilizado: false });
+
+//       return NextResponse.json({
+//         success:     true,
+//         gratuito:    true,
+//         inscricaoId: inscricaoGratis.id,
+//         redirectUrl: `${process.env.NEXT_PUBLIC_APP_URL}/checkout/${inscricaoGratis.id}?status=pago`,
+//       }, { status: 201 });
+//     }
+
+//     // ── 7. Calcula split e juros ──────────────────────────────────────────────
+//     const split = calcularSplit(precoBRL, parcelas);
+
+//     // ── 8. Cria inscrição PENDENTE antes de ir à Pagar.me ────────────────────
+//     const { data: inscricao, error: inscricaoError } = await supabase
+//       .from('inscricoes')
+//       .insert({
+//         usuario_id:       user.id,
+//         lote_id:          loteId,
+//         status_pagamento: 'PENDENTE',
+//         txid_pix:         null,   // não é mais Pix manual; preenchido pelo webhook
+//         parcelas,
+//       })
+//       .select()
+//       .single();
+
+//     if (inscricaoError || !inscricao) {
+//       await supabase.rpc('devolver_vaga', { p_lote_id: loteId });
+//       console.error('[checkout] Erro ao criar inscrição:', inscricaoError);
+//       return NextResponse.json({ error: 'Erro ao gerar pedido de inscrição.' }, { status: 500 });
+//     }
+
+//     // ── 9. Cria o Payment Link na Pagar.me ────────────────────────────────────
+//     let paymentLink;
+//     try {
+//       paymentLink = await criarPaymentLink({
+//         nomeItem:      `${lote.nome} — ${evento?.nome ?? 'Evento'}`,
+//         descricaoItem: `Ingresso tipo ${lote.tipo ?? 'ingresso'} para ${evento?.nome ?? 'o evento'}`,
+//         totalCentavos: split.totalCentavos,
+//         inscricaoId:   inscricao.id,
+//         loteId,
+//         usuarioId:     user.id,
+//         recebedorId,
+//         split,
+//         parcelas,
+//         successUrl: `${process.env.NEXT_PUBLIC_APP_URL}/checkout/${inscricao.id}?status=pago`,
+//         cancelUrl:  `${process.env.NEXT_PUBLIC_APP_URL}/checkout/${inscricao.id}?status=cancelado`,
+//         expiresInMinutos: 30,
+//       });
+//     } catch (pagarmeError) {
+//       // Reverte reserva e inscrição se a Pagar.me falhou
+//       await supabase.rpc('devolver_vaga', { p_lote_id: loteId });
+//       await supabase.from('inscricoes').delete().eq('id', inscricao.id);
+
+//       console.error('[checkout] Erro na Pagar.me:', pagarmeError);
+//       const msg = pagarmeError instanceof Error ? pagarmeError.message : 'Erro ao gerar link de pagamento.';
+//       return NextResponse.json({ error: msg }, { status: 502 });
+//     }
+
+//     // ── 10. Salva o ID do Payment Link para correlação no webhook ─────────────
+//     await supabase
+//       .from('inscricoes')
+//       .update({ pagarme_payment_link_id: paymentLink.id })
+//       .eq('id', inscricao.id);
+
+//     return NextResponse.json({
+//       success:      true,
+//       inscricaoId:  inscricao.id,
+//       checkoutUrl:  paymentLink.url,    // cliente redireciona para cá
+//       paymentLinkId: paymentLink.id,
+//     }, { status: 201 });
+
+//   } catch (error) {
+//     console.error('[checkout] Erro inesperado:', error);
+//     const msg = error instanceof Error ? error.message : 'Erro interno do servidor.';
+//     return NextResponse.json({ error: msg }, { status: 500 });
+//   }
+// }

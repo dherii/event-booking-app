@@ -35,7 +35,7 @@ export function BannerCarrossel({ eventos }: { eventos: EventoBanner[] }) {
       <div className="relative w-full h-[220px] sm:h-[350px] md:h-[420px]">
         <Image
           src={eventoAtivo.bannerUrl}
-          alt={eventoAtivo.titulo}
+          alt={eventoAtivo.titulo || "Banner do evento"}
           fill
           priority
           className="object-cover object-center transition-all duration-700 ease-in-out"
