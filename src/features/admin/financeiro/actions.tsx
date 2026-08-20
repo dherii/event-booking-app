@@ -85,3 +85,76 @@ export async function listarTransacoes(): Promise<Transacao[]> {
     };
   });
 }
+
+// ─── Dados Bancários (Repasse MisticPay) ──────────────────────────────────────
+
+import { DadosBancarios } from './types';
+
+export async function buscarDadosBancarios(): Promise<DadosBancarios | null> {
+  const supabaseAuth = await createSupabaseServerClient();
+  const { data: { user } } = await supabaseAuth.auth.getUser();
+  if (!user) return null;
+
+  const { data: profile } = await supabaseAuth
+    .from('profiles')
+    .select('estabelecimento_id')
+    .eq('id', user.id)
+    .single();
+
+  if (!profile?.estabelecimento_id) return null;
+
+  const supabase = getSupabaseAdmin();
+  const { data } = await supabase
+    .from('estabelecimentos')
+    .select('*')
+    .eq('id', profile.estabelecimento_id)
+    .single();
+
+  if (!data || !data.recebedor_documento) return null; // Se não tem documento, assume que nunca preencheu
+
+  return {
+    tipoConta: data.recebedor_tipo_conta as 'pf' | 'pj',
+    nomeRazao: data.recebedor_nome || '',
+    cpfCnpj: data.recebedor_documento || '',
+    banco: data.recebedor_banco || '',
+    agencia: data.recebedor_agencia || '',
+    conta: data.recebedor_conta || '',
+    digitoConta: data.recebedor_digito || '',
+    chavePix: data.recebedor_chave_pix || '',
+    tipoChavePix: data.recebedor_tipo_chave_pix as any,
+  };
+}
+
+export async function salvarDadosBancarios(dados: DadosBancarios) {
+  const supabaseAuth = await createSupabaseServerClient();
+  const { data: { user } } = await supabaseAuth.auth.getUser();
+  if (!user) throw new Error('Não autenticado.');
+
+  const { data: profile } = await supabaseAuth
+    .from('profiles')
+    .select('estabelecimento_id')
+    .eq('id', user.id)
+    .single();
+
+  if (!profile?.estabelecimento_id) throw new Error('Estabelecimento não encontrado.');
+
+  const supabase = getSupabaseAdmin();
+  
+  const { error } = await supabase
+    .from('estabelecimentos')
+    .update({
+      recebedor_tipo_conta: dados.tipoConta,
+      recebedor_nome: dados.nomeRazao,
+      recebedor_documento: dados.cpfCnpj,
+      recebedor_banco: dados.banco,
+      recebedor_agencia: dados.agencia,
+      recebedor_conta: dados.conta,
+      recebedor_digito: dados.digitoConta,
+      recebedor_chave_pix: dados.chavePix,
+      recebedor_tipo_chave_pix: dados.tipoChavePix,
+    })
+    .eq('id', profile.estabelecimento_id);
+
+  if (error) throw new Error('Erro ao salvar os dados bancários.');
+  return { success: true };
+}

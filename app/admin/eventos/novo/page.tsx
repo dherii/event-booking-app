@@ -71,14 +71,18 @@ function validateStep(step: number, state: WizardState): string | null {
     if (semNome) return 'Toda atração ou atividade precisa de um nome — ou remova a linha em branco.';
   }
   if (step === 2) {
-    if (state.lotes.lotes.length === 0) return 'Adicione ao menos um lote de ingressos.';
-    const semVagas = state.lotes.lotes.some((l) => !l.quantidade || l.quantidade < 1);
-    if (semVagas)  return 'Todos os lotes precisam ter ao menos 1 vaga.';
-    const semCapacidade = state.lotes.lotes.some(
-      (l) => l.tipo !== 'ingresso' && (!l.capacidadePessoas || l.capacidadePessoas < 1)
-    );
-    if (semCapacidade) return 'Mesas e camarotes precisam informar quantas pessoas cabem.';
-  }
+  if (state.lotes.lotes.length === 0) return 'Adicione ao menos um lote de ingressos.';
+  const semVagas = state.lotes.lotes.some((l) => !l.quantidade || l.quantidade < 1);
+  if (semVagas)  return 'Todos os lotes precisam ter ao menos 1 vaga.';
+  
+  const precoInvalido = state.lotes.lotes.some((l) => l.preco > 0 && l.preco < 5);
+  if (precoInvalido) return 'Lotes pagos devem custar no mínimo R$ 5,00 devido às taxas fixas de processamento do Pix.';
+  
+  const semCapacidade = state.lotes.lotes.some(
+    (l) => l.tipo !== 'ingresso' && (!l.capacidadePessoas || l.capacidadePessoas < 1)
+  );
+  if (semCapacidade) return 'Mesas e camarotes precisam informar quantas pessoas cabem.';
+}
   return null;
 }
 

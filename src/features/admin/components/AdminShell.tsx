@@ -17,6 +17,7 @@ import {
   ExternalLink,
   User,
   MoreVertical,
+  Banknote
 } from 'lucide-react';
 
 // ─── Tipos ────────────────────────────────────────────────────────────────────
@@ -32,16 +33,18 @@ interface AdminShellProps {
   userNome: string;
   userEmail: string;
   estabelecimentoNome: string;
+  userRole: string;
 }
 
 // ─── Constantes ───────────────────────────────────────────────────────────────
 
 const NAV_ITEMS: NavItem[] = [
-  { label: 'Dashboard',     href: '/admin',               icon: LayoutDashboard },
-  { label: 'Eventos',       href: '/admin/eventos',        icon: CalendarDays    },
-  { label: 'Participantes', href: '/admin/participantes',  icon: Users           },
-  { label: 'Financeiro',    href: '/admin/financeiro',     icon: Wallet          },
-  { label: 'Configurações', href: '/admin/configuracoes',  icon: Settings        },
+  { label: 'Dashboard', href: '/admin', icon: LayoutDashboard },
+  { label: 'Eventos', href: '/admin/eventos', icon: CalendarDays },
+  { label: 'Participantes', href: '/admin/participantes', icon: Users },
+  { label: 'Financeiro', href: '/admin/financeiro', icon: Wallet },
+  { label: 'Repasses', href: '/admin/repasses', icon: Banknote },
+  { label: 'Configurações', href: '/admin/configuracoes', icon: Settings },
 ];
 
 function iniciais(nome: string) {
@@ -87,12 +90,14 @@ function Sidebar({
   userNome,
   userEmail,
   estabelecimentoNome,
+  userRole,
 }: {
   pathname: string;
   onClose?: () => void;
   userNome: string;
   userEmail: string;
   estabelecimentoNome: string;
+  userRole: string;
 }) {
   const [menuUserAberto, setMenuUserAberto] = useState(false);
   const router = useRouter();
@@ -127,7 +132,10 @@ function Sidebar({
       </div>
 
       <nav className="flex flex-col gap-1 flex-1">
-        {NAV_ITEMS.map((item) => (
+        {NAV_ITEMS.filter((item) => {
+          if (item.href === '/admin/repasses' && userRole !== 'super_admin') return false;
+          return true;
+        }).map((item) => (
           <NavLink
             key={item.href}
             item={item}
@@ -261,7 +269,7 @@ function Header({
 
 // ─── Shell Principal ────────────────────────────────────────────────────────
 
-export function AdminShell({ children, userNome, userEmail, estabelecimentoNome }: AdminShellProps) {
+export function AdminShell({ children, userNome, userEmail, estabelecimentoNome, userRole }: AdminShellProps) {
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
 
@@ -273,6 +281,7 @@ export function AdminShell({ children, userNome, userEmail, estabelecimentoNome 
           userNome={userNome}
           userEmail={userEmail}
           estabelecimentoNome={estabelecimentoNome}
+          userRole={userRole}
         />
       </div>
 
@@ -283,13 +292,14 @@ export function AdminShell({ children, userNome, userEmail, estabelecimentoNome 
             onClick={() => setMobileOpen(false)}
             aria-hidden
           />
-          <div className="fixed inset-y-0 left-0 z-40 flex lg:hidden">
+          <div className="fixed inset-y-0 left-0 z-40 flex w-60 lg:hidden">
             <Sidebar
               pathname={pathname}
               onClose={() => setMobileOpen(false)}
               userNome={userNome}
               userEmail={userEmail}
               estabelecimentoNome={estabelecimentoNome}
+              userRole={userRole}
             />
           </div>
         </>
