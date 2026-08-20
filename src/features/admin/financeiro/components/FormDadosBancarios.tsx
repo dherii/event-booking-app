@@ -1,9 +1,7 @@
-// src/features/admin/financeiro/components/FormDadosBancarios.tsx
 'use client';
 
 import { useState } from 'react';
-import { ShieldCheck, Info, ChevronDown, Check, Loader2 } from 'lucide-react';
-import type { DadosBancarios } from '../types';
+import { ShieldCheck, CheckCircle } from 'lucide-react';
 
 const BANCOS = [
   { codigo: '001', nome: 'Banco do Brasil' },
