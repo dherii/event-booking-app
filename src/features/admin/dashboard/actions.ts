@@ -1,4 +1,4 @@
-'use server'
+'use server';
 
 import { getSupabaseAdmin } from '@/src/config/supabase';
 import { createSupabaseServerClient } from '@/src/config/supabase-server';
@@ -6,6 +6,7 @@ import { createSupabaseServerClient } from '@/src/config/supabase-server';
 // Interfaces para tipagem dos dados do banco
 interface Lote {
   nome: string;
+  preco?: number;
 }
 
 interface Inscricao {
@@ -43,8 +44,8 @@ export async function getDashboardData() {
 
   const supabase = getSupabaseAdmin();
 
-  // 2. Busca das inscrições para a tabela principal — agora com !inner e
-  //    filtro por estabelecimento_id
+  // 2. Busca das inscrições para a tabela principal — com !inner,
+  //    filtro por estabelecimento_id e incluindo o 'nome' do lote.
   let queryInscricoes = supabase
     .from('inscricoes')
     .select(`
@@ -52,9 +53,10 @@ export async function getDashboardData() {
       status_pagamento,
       created_at,
       txid_pix,
-      lotes!inner (
+      lotes (
         preco,
-        eventos!inner ( nome, estabelecimento_id )
+        nome,
+        eventos ( nome, estabelecimento_id )
       )
     `)
     .order('created_at', { ascending: false });

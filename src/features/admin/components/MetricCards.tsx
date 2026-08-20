@@ -10,24 +10,26 @@ interface MetricCardsProps {
 export default function MetricCards({ metrics }: MetricCardsProps) {
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-      <div className="bg-gray-900 border border-gray-800 p-6 rounded-xl shadow-md">
-        <p className="text-gray-500 text-xs font-semibold uppercase tracking-wider">Receita Total</p>
-        <p className="text-2xl font-bold text-green-400 mt-2">R$ {metrics.totalReceita.toFixed(2)}</p>
+      <div className="bg-card border border-border p-6 rounded-xl shadow-sm">
+        <p className="text-muted text-xs font-semibold uppercase tracking-wider">Receita Total</p>
+        <p className="text-2xl font-bold text-emerald-600 mt-2">
+          R$ {metrics.totalReceita.toFixed(2)}
+        </p>
       </div>
 
-      <div className="bg-gray-900 border border-gray-800 p-6 rounded-xl shadow-md">
-        <p className="text-gray-500 text-xs font-semibold uppercase tracking-wider">Total de Inscrições</p>
-        <p className="text-2xl font-bold text-white mt-2">{metrics.totalInscritos}</p>
+      <div className="bg-card border border-border p-6 rounded-xl shadow-sm">
+        <p className="text-muted text-xs font-semibold uppercase tracking-wider">Total de Inscrições</p>
+        <p className="text-2xl font-bold text-foreground mt-2">{metrics.totalInscritos}</p>
       </div>
 
-      <div className="bg-gray-900 border border-gray-800 p-6 rounded-xl shadow-md">
-        <p className="text-gray-500 text-xs font-semibold uppercase tracking-wider">Pagamentos Confirmados</p>
-        <p className="text-2xl font-bold text-blue-400 mt-2">{metrics.pagos}</p>
+      <div className="bg-card border border-border p-6 rounded-xl shadow-sm">
+        <p className="text-muted text-xs font-semibold uppercase tracking-wider">Pagamentos Confirmados</p>
+        <p className="text-2xl font-bold text-primary mt-2">{metrics.pagos}</p>
       </div>
 
-      <div className="bg-gray-900 border border-gray-800 p-6 rounded-xl shadow-md">
-        <p className="text-gray-500 text-xs font-semibold uppercase tracking-wider">Aguardando Pix</p>
-        <p className="text-2xl font-bold text-yellow-500 mt-2">{metrics.pendentes}</p>
+      <div className="bg-card border border-border p-6 rounded-xl shadow-sm">
+        <p className="text-muted text-xs font-semibold uppercase tracking-wider">Aguardando Pix</p>
+        <p className="text-2xl font-bold text-amber-600 mt-2">{metrics.pendentes}</p>
       </div>
     </div>
   );

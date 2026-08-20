@@ -28,7 +28,7 @@ export function AceitarTransferenciaButton({ token }: { token: string }) {
 
   if (sucesso) {
     return (
-      <div className="flex flex-col items-center gap-2 text-green-400">
+      <div className="flex flex-col items-center gap-2 text-success-fg">
         <CheckCircle size={28} />
         <p className="text-sm font-medium">Ingresso transferido! Redirecionando…</p>
       </div>
@@ -38,14 +38,14 @@ export function AceitarTransferenciaButton({ token }: { token: string }) {
   return (
     <div className="space-y-2">
       {erro && (
-        <p className="text-sm text-red-400 bg-red-900/20 border border-red-900/40 rounded-lg px-3 py-2">
+        <p className="text-sm text-error-fg bg-error-bg rounded-lg px-3 py-2">
           {erro}
         </p>
       )}
       <button
         onClick={handleAceitar}
         disabled={loading}
-        className="w-full flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-500 text-white font-semibold py-2.5 rounded-lg transition-all active:scale-[0.99] disabled:opacity-50"
+        className="clubber-button w-full disabled:opacity-50"
       >
         {loading ? <Loader2 size={16} className="animate-spin" /> : null}
         {loading ? 'Aceitando…' : 'Aceitar ingresso'}

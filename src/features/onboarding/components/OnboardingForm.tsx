@@ -43,9 +43,9 @@ export function OnboardingForm() {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="bg-gray-900 border border-gray-800 rounded-2xl p-6 space-y-4">
+    <form onSubmit={handleSubmit} className="clubber-card p-6 space-y-4">
       <div>
-        <label className="block text-xs font-semibold uppercase text-gray-400 mb-1">
+        <label className="block text-xs font-semibold uppercase text-muted-subtle mb-1">
           Nome do estabelecimento *
         </label>
         <input
@@ -53,16 +53,16 @@ export function OnboardingForm() {
           value={nome}
           onChange={(e) => setNome(e.target.value)}
           placeholder="Ex: UOU Pub"
-          className="w-full bg-gray-950 border border-gray-800 rounded-lg p-2.5 text-sm text-white focus:outline-none focus:border-blue-500 transition-colors"
+          className="input-base"
           required
         />
-        <p className="text-xs text-gray-500 mt-1">
-          Sua página ficará em: <span className="text-blue-400 font-mono">/{slugPreview}</span>
+        <p className="text-xs text-muted-subtle mt-1">
+          Sua página ficará em: <span className="text-primary font-mono">/{slugPreview}</span>
         </p>
       </div>
 
       <div>
-        <label className="block text-xs font-semibold uppercase text-gray-400 mb-1">
+        <label className="block text-xs font-semibold uppercase text-muted-subtle mb-1">
           Cidade
         </label>
         <input
@@ -70,12 +70,12 @@ export function OnboardingForm() {
           value={cidade}
           onChange={(e) => setCidade(e.target.value)}
           placeholder="Quixadá - CE"
-          className="w-full bg-gray-950 border border-gray-800 rounded-lg p-2.5 text-sm text-white focus:outline-none focus:border-blue-500 transition-colors"
+          className="input-base"
         />
       </div>
 
       <div>
-        <label className="block text-xs font-semibold uppercase text-gray-400 mb-1">
+        <label className="block text-xs font-semibold uppercase text-muted-subtle mb-1">
           Instagram
         </label>
         <input
@@ -83,12 +83,12 @@ export function OnboardingForm() {
           value={instagram}
           onChange={(e) => setInstagram(e.target.value)}
           placeholder="uoupub"
-          className="w-full bg-gray-950 border border-gray-800 rounded-lg p-2.5 text-sm text-white focus:outline-none focus:border-blue-500 transition-colors"
+          className="input-base"
         />
       </div>
 
       {error && (
-        <p role="alert" className="text-sm text-red-400 bg-red-900/20 border border-red-900/40 rounded-lg px-3 py-2">
+        <p role="alert" className="text-sm text-error-fg bg-error-bg rounded-lg px-3 py-2">
           {error}
         </p>
       )}
@@ -96,7 +96,7 @@ export function OnboardingForm() {
       <button
         type="submit"
         disabled={loading}
-        className="w-full flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-500 text-white font-semibold py-2.5 rounded-lg transition-all active:scale-[0.99] disabled:opacity-50"
+        className="clubber-button w-full disabled:opacity-50"
       >
         {loading ? <Loader2 size={16} className="animate-spin" /> : <Rocket size={16} />}
         {loading ? 'Criando…' : 'Criar meu estabelecimento'}

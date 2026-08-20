@@ -17,7 +17,7 @@ export default function PixCopyButton({ codigo }: PixCopyButtonProps) {
   return (
     <button
       onClick={copiarPix}
-      className="w-full bg-gray-900 p-2 rounded text-blue-400 break-all text-left border border-gray-800 hover:border-blue-600 transition-colors"
+      className="w-full bg-background p-2 rounded text-primary break-all text-left border border-border hover:border-primary transition-colors"
     >
       {codigo}
     </button>

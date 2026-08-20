@@ -1,10 +1,11 @@
-// src/features/admin/eventos/types.ts
-
 export interface Atracao {
   id: string;
   nomeArtista: string;
-  horario: string; // datetime-local (ex: 2026-07-20T23:00)
-  fotoUrl: string;
+  horario?: string; // datetime-local (ex: 2026-07-20T23:00)
+  fotoUrl?: string;
+  localSala?: string;
+  vagasTotais?: number;
+  descricao?: string;
 }
 
 export type LoteTipo = 'ingresso' | 'mesa' | 'camarote';
@@ -35,7 +36,7 @@ export interface EventoFormData {
   categorias: string[];
 }
 
-// Etapa 2 — atrações / line-up
+// Etapa 2 — atrações / line-up / oficinas
 export interface AtracoesFormData {
   atracoes: Atracao[];
 }

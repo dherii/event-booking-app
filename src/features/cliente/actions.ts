@@ -252,3 +252,45 @@ export async function aceitarTransferencia(token: string) {
 
   return { success: true };
 }
+
+// ─── Perfil ───────────────────────────────────────────────────────────────
+
+export interface MeuPerfil {
+  nome: string | null;
+  avatarUrl: string | null;
+  email: string;
+}
+
+export async function buscarMeuPerfil(): Promise<MeuPerfil> {
+  const supabaseAuth = await createSupabaseServerClient();
+  const { data: { user } } = await supabaseAuth.auth.getUser();
+  if (!user) throw new Error('Não autenticado.');
+
+  const { data: profile } = await supabaseAuth
+    .from('profiles')
+    .select('nome, avatar_url')
+    .eq('id', user.id)
+    .single();
+
+  return {
+    nome: profile?.nome ?? null,
+    avatarUrl: profile?.avatar_url ?? null,
+    email: user.email ?? '',
+  };
+}
+
+export async function atualizarPerfil(data: { nome: string; avatarUrl?: string | null }) {
+  const supabaseAuth = await createSupabaseServerClient();
+  const { data: { user } } = await supabaseAuth.auth.getUser();
+  if (!user) throw new Error('Não autenticado.');
+
+  const supabase = getSupabaseAdmin();
+
+  const payload: Record<string, unknown> = { nome: data.nome };
+  if (data.avatarUrl !== undefined) payload.avatar_url = data.avatarUrl;
+
+  const { error } = await supabase.from('profiles').update(payload).eq('id', user.id);
+  if (error) throw new Error(error.message);
+
+  return { success: true };
+}

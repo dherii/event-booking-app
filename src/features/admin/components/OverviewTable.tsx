@@ -19,9 +19,9 @@ interface OverviewTableProps {
 
 export default function OverviewTable({ inscricoes }: OverviewTableProps) {
   return (
-    <div className="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden shadow-md">
-      <div className="p-6 border-b border-gray-800">
-        <h3 className="text-lg font-bold text-white">
+    <div className="bg-card border border-border rounded-xl overflow-hidden shadow-sm">
+      <div className="p-6 border-b border-border">
+        <h3 className="text-lg font-bold text-foreground">
           Últimas Inscrições Realizadas
         </h3>
       </div>
@@ -29,7 +29,7 @@ export default function OverviewTable({ inscricoes }: OverviewTableProps) {
       <div className="overflow-x-auto">
         <table className="w-full text-left border-collapse">
           <thead>
-            <tr className="bg-gray-950 border-b border-gray-800 text-xs text-gray-400 font-semibold uppercase tracking-wider">
+            <tr className="bg-background-secondary border-b border-border text-xs text-muted font-semibold uppercase tracking-wider">
               <th className="p-4">Evento</th>
               <th className="p-4">TXID Pix</th>
               <th className="p-4">Valor</th>
@@ -37,10 +37,10 @@ export default function OverviewTable({ inscricoes }: OverviewTableProps) {
             </tr>
           </thead>
 
-          <tbody className="divide-y divide-gray-800/50 text-sm">
+          <tbody className="divide-y divide-border text-sm">
             {inscricoes.length === 0 ? (
               <tr>
-                <td colSpan={4} className="p-8 text-center text-gray-500">
+                <td colSpan={4} className="p-8 text-center text-muted">
                   Nenhuma inscrição encontrada até o momento.
                 </td>
               </tr>
@@ -48,17 +48,17 @@ export default function OverviewTable({ inscricoes }: OverviewTableProps) {
               inscricoes.map((inscricao) => (
                 <tr
                   key={inscricao.id}
-                  className="hover:bg-gray-800/20 transition-colors"
+                  className="hover:bg-background-secondary/60 transition-colors"
                 >
-                  <td className="p-4 font-medium text-white">
+                  <td className="p-4 font-medium text-foreground">
                     {inscricao.lotes?.eventos?.nome || 'Não identificado'}
                   </td>
 
-                  <td className="p-4 font-mono text-xs text-blue-400 max-w-[150px] truncate">
+                  <td className="p-4 font-mono text-xs text-primary max-w-[150px] truncate">
                     {inscricao.txid_pix ?? '-'}
                   </td>
 
-                  <td className="p-4 text-green-400 font-semibold">
+                  <td className="p-4 text-emerald-600 font-semibold">
                     R$ {(inscricao.lotes?.preco ?? 0).toFixed(2)}
                   </td>
 
@@ -66,10 +66,10 @@ export default function OverviewTable({ inscricoes }: OverviewTableProps) {
                     <span
                       className={`text-xs font-semibold px-2.5 py-1 rounded-full ${
                         inscricao.status_pagamento === 'PAGO'
-                          ? 'bg-green-500/10 text-green-400'
+                          ? 'bg-emerald-100 text-emerald-700 border border-emerald-200'
                           : inscricao.status_pagamento === 'PENDENTE'
-                          ? 'bg-yellow-500/10 text-yellow-400'
-                          : 'bg-red-500/10 text-red-400'
+                          ? 'bg-amber-100 text-amber-700 border border-amber-200'
+                          : 'bg-red-100 text-red-700 border border-red-200'
                       }`}
                     >
                       {inscricao.status_pagamento}

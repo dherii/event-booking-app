@@ -1,122 +1,143 @@
 @import "tailwindcss";
 
 /* ============================================================
-   CLUBBER â€” IDENTIDADE VISUAL
-   Tema: Dark Neon / Nightlife / Eventos
+   IDENTIDADE VISUAL — Tema Acadêmico / Institucional (claro)
    ============================================================ */
 
 @custom-variant dark (&:where(.dark, .dark *));
 
 :root {
-  --background: #0f111a;
-  --background-secondary: #121522;
-  --background-tertiary: #171a27;
+  /* Fundo e superfícies */
+  --background: #ffffff;
+  --background-secondary: #f8fafc;
+  --background-tertiary: #e5e7eb;
 
-  --card: #1a1d2b;
-  --card-hover: #202435;
+  --card: #ffffff;
+  --card-hover: #f3f4f6;
 
-  --surface: rgba(26, 29, 43, 0.82);
-  --surface-hover: rgba(32, 36, 53, 0.9);
+  --surface: rgba(255, 255, 255, 0.9);
+  --surface-hover: rgba(243, 244, 246, 0.95);
 
-  --foreground: #ffffff;
+  /* Textos */
+  --foreground: #111827;
 
-  --muted: #a0a5b5;
-  --muted-subtle: #71778a;
+  --muted: #4b5563;
+  --muted-subtle: #9ca3af;
 
-  --text-primary: #ffffff;
-  --text-secondary: #a0a5b5;
-  --text-tertiary: #71778a;
+  --text-primary: #111827;
+  --text-secondary: #4b5563;
+  --text-tertiary: #9ca3af;
 
-  --primary: #22d3ee;
-  --primary-hover: #06b6d4;
-  --primary-active: #0891b2;
-  --primary-fg: #06111a;
+  /* Cor primária — azul institucional */
+  --primary: #2563eb;
+  --primary-hover: #1d4ed8;
+  --primary-active: #1e40af;
+  --primary-fg: #ffffff;
 
-  --accent-purple: #a855f7;
-  --accent-purple-light: #c084fc;
-  --accent-purple-dark: #7e22ce;
+  /* Azul escuro (substitui o antigo "roxo") */
+  --accent-purple: #1e3a8a;
+  --accent-purple-light: #2563eb;
+  --accent-purple-dark: #172554;
 
-  --accent-pink: #ec4899;
-  --accent-pink-light: #f472b6;
-  --accent-pink-dark: #be185d;
+  /* Azul claro (substitui o antigo "rosa") */
+  --accent-pink: #60a5fa;
+  --accent-pink-light: #93c5fd;
+  --accent-pink-dark: #2563eb;
 
-  --gradient-brand: linear-gradient(135deg, #a855f7 0%, #ec4899 100%);
-  --gradient-brand-horizontal: linear-gradient(90deg, #a855f7 0%, #ec4899 100%);
-  --gradient-neon: linear-gradient(135deg, #22d3ee 0%, #a855f7 50%, #ec4899 100%);
-  --gradient-hero: linear-gradient(180deg, rgba(15, 17, 26, 0.05) 0%, rgba(15, 17, 26, 0.45) 55%, rgba(15, 17, 26, 0.98) 100%);
+  /* Gradientes da marca */
+  --gradient-brand: linear-gradient(135deg, #1e3a8a 0%, #60a5fa 100%);
+  --gradient-brand-horizontal: linear-gradient(90deg, #1e3a8a 0%, #60a5fa 100%);
+  --gradient-neon: linear-gradient(135deg, #2563eb 0%, #1e3a8a 50%, #60a5fa 100%);
+  --gradient-hero: linear-gradient(180deg, rgba(17, 24, 39, 0.05) 0%, rgba(17, 24, 39, 0.35) 55%, rgba(17, 24, 39, 0.85) 100%);
 
-  --input-bg: #151824;
-  --input-bg-hover: #191d2b;
-  --input-border: #2b3042;
-  --input-border-hover: #3b4157;
-  --input-border-focus: #22d3ee;
-  --input-ring: rgba(34, 211, 238, 0.22);
+  /* Inputs */
+  --input-bg: #ffffff;
+  --input-bg-hover: #f9fafb;
 
-  --border: #272b3b;
-  --border-light: #303548;
-  --border-neon: rgba(34, 211, 238, 0.45);
-  --border-purple: rgba(168, 85, 247, 0.45);
-  --border-pink: rgba(236, 72, 153, 0.45);
+  --input-border: #d1d5db;
+  --input-border-hover: #9ca3af;
+  --input-border-focus: #2563eb;
 
-  --error-bg: rgba(244, 63, 94, 0.15);
-  --error-fg: #fb7185;
+  --input-ring: rgba(37, 99, 235, 0.18);
 
-  --success-bg: rgba(52, 211, 153, 0.15);
-  --success-fg: #34d399;
-  --success-action: #22c55e;
-  --success-action-hover: #16a34a;
+  /* Bordas */
+  --border: #e5e7eb;
+  --border-light: #f3f4f6;
 
-  --warning-bg: rgba(250, 204, 21, 0.15);
-  --warning-fg: #facc15;
+  --border-neon: rgba(37, 99, 235, 0.35);
+  --border-purple: rgba(30, 58, 138, 0.3);
+  --border-pink: rgba(96, 165, 250, 0.35);
 
-  --shadow-card: 0 10px 30px rgba(0, 0, 0, 0.25);
-  --shadow-card-hover: 0 20px 45px rgba(0, 0, 0, 0.4);
-  --shadow-neon: 0 0 25px rgba(34, 211, 238, 0.2);
-  --shadow-purple: 0 0 25px rgba(168, 85, 247, 0.2);
-  --shadow-pink: 0 0 25px rgba(236, 72, 153, 0.2);
+  /* Feedback — Erro */
+  --error-bg: #fef2f2;
+  --error-fg: #dc2626;
+
+  /* Feedback — Sucesso */
+  --success-bg: #f0fdf4;
+  --success-fg: #16a34a;
+
+  --success-action: #16a34a;
+  --success-action-hover: #15803d;
+
+  /* Alerta */
+  --warning-bg: #fffbeb;
+  --warning-fg: #d97706;
+
+  /* Sombras — suaves, sem "glow" neon */
+  --shadow-card: 0 1px 3px rgba(17, 24, 39, 0.08), 0 1px 2px rgba(17, 24, 39, 0.04);
+  --shadow-card-hover: 0 10px 20px rgba(17, 24, 39, 0.08), 0 3px 6px rgba(17, 24, 39, 0.05);
+  --shadow-neon: 0 8px 20px rgba(37, 99, 235, 0.18);
+  --shadow-purple: 0 8px 20px rgba(30, 58, 138, 0.15);
+  --shadow-pink: 0 8px 20px rgba(96, 165, 250, 0.2);
 }
 
+/* Mesmos valores em .dark — não há toggle de tema implementado,
+   então mantemos os dois iguais por segurança */
 .dark {
-  --background: #0f111a;
-  --background-secondary: #121522;
-  --background-tertiary: #171a27;
-  --card: #1a1d2b;
-  --card-hover: #202435;
-  --surface: rgba(26, 29, 43, 0.82);
-  --surface-hover: rgba(32, 36, 53, 0.9);
-  --foreground: #ffffff;
-  --muted: #a0a5b5;
-  --muted-subtle: #71778a;
-  --text-primary: #ffffff;
-  --text-secondary: #a0a5b5;
-  --text-tertiary: #71778a;
-  --primary: #22d3ee;
-  --primary-hover: #06b6d4;
-  --primary-active: #0891b2;
-  --primary-fg: #06111a;
-  --accent-purple: #a855f7;
-  --accent-purple-light: #c084fc;
-  --accent-purple-dark: #7e22ce;
-  --accent-pink: #ec4899;
-  --accent-pink-light: #f472b6;
-  --accent-pink-dark: #be185d;
-  --input-bg: #151824;
-  --input-bg-hover: #191d2b;
-  --input-border: #2b3042;
-  --input-border-hover: #3b4157;
-  --input-border-focus: #22d3ee;
-  --input-ring: rgba(34, 211, 238, 0.22);
-  --border: #272b3b;
-  --border-light: #303548;
-  --border-neon: rgba(34, 211, 238, 0.45);
-  --border-purple: rgba(168, 85, 247, 0.45);
-  --border-pink: rgba(236, 72, 153, 0.45);
-  --shadow-card: 0 10px 30px rgba(0, 0, 0, 0.25);
-  --shadow-card-hover: 0 20px 45px rgba(0, 0, 0, 0.4);
-  --shadow-neon: 0 0 25px rgba(34, 211, 238, 0.2);
-  --shadow-purple: 0 0 25px rgba(168, 85, 247, 0.2);
-  --shadow-pink: 0 0 25px rgba(236, 72, 153, 0.2);
+  --background: #ffffff;
+  --background-secondary: #f8fafc;
+  --background-tertiary: #e5e7eb;
+  --card: #ffffff;
+  --card-hover: #f3f4f6;
+  --surface: rgba(255, 255, 255, 0.9);
+  --surface-hover: rgba(243, 244, 246, 0.95);
+  --foreground: #111827;
+  --muted: #4b5563;
+  --muted-subtle: #9ca3af;
+  --text-primary: #111827;
+  --text-secondary: #4b5563;
+  --text-tertiary: #9ca3af;
+  --primary: #2563eb;
+  --primary-hover: #1d4ed8;
+  --primary-active: #1e40af;
+  --primary-fg: #ffffff;
+  --accent-purple: #1e3a8a;
+  --accent-purple-light: #2563eb;
+  --accent-purple-dark: #172554;
+  --accent-pink: #60a5fa;
+  --accent-pink-light: #93c5fd;
+  --accent-pink-dark: #2563eb;
+  --input-bg: #ffffff;
+  --input-bg-hover: #f9fafb;
+  --input-border: #d1d5db;
+  --input-border-hover: #9ca3af;
+  --input-border-focus: #2563eb;
+  --input-ring: rgba(37, 99, 235, 0.18);
+  --border: #e5e7eb;
+  --border-light: #f3f4f6;
+  --border-neon: rgba(37, 99, 235, 0.35);
+  --border-purple: rgba(30, 58, 138, 0.3);
+  --border-pink: rgba(96, 165, 250, 0.35);
+  --shadow-card: 0 1px 3px rgba(17, 24, 39, 0.08), 0 1px 2px rgba(17, 24, 39, 0.04);
+  --shadow-card-hover: 0 10px 20px rgba(17, 24, 39, 0.08), 0 3px 6px rgba(17, 24, 39, 0.05);
+  --shadow-neon: 0 8px 20px rgba(37, 99, 235, 0.18);
+  --shadow-purple: 0 8px 20px rgba(30, 58, 138, 0.15);
+  --shadow-pink: 0 8px 20px rgba(96, 165, 250, 0.2);
 }
+
+/* ============================================================
+   TEMA DO TAILWIND CSS V4
+   ============================================================ */
 
 @theme inline {
   --color-background: var(--background);
@@ -162,7 +183,7 @@
   --color-warning-bg: var(--warning-bg);
   --color-warning-fg: var(--warning-fg);
 
-  /* Sombras â€” necessÃ¡rio pra virarem utilitÃ¡rios shadow-* de verdade */
+  /* Sombras */
   --shadow-card: var(--shadow-card);
   --shadow-card-hover: var(--shadow-card-hover);
   --shadow-neon: var(--shadow-neon);
@@ -173,9 +194,13 @@
   --font-mono: var(--font-geist-mono);
 }
 
+/* ============================================================
+   RESET / BASE GLOBAL
+   ============================================================ */
+
 html {
   background-color: var(--background);
-  color-scheme: dark;
+  color-scheme: light;
 }
 
 body {
@@ -191,8 +216,8 @@ body {
 }
 
 ::selection {
-  background-color: rgba(168, 85, 247, 0.45);
-  color: #ffffff;
+  background-color: rgba(37, 99, 235, 0.2);
+  color: #111827;
 }
 
 ::-webkit-scrollbar {
@@ -203,7 +228,7 @@ body {
   background: var(--background);
 }
 ::-webkit-scrollbar-thumb {
-  background: #303548;
+  background: #cbd5e1;
   border-radius: 999px;
 }
 ::-webkit-scrollbar-thumb:hover {
@@ -230,18 +255,17 @@ a {
   }
   .input-base:hover {
     border-color: var(--input-border-hover);
-    background-color: var(--input-bg-hover);
   }
   .input-base:focus {
     border-color: var(--input-border-focus);
-    box-shadow: 0 0 0 3px var(--input-ring), 0 0 18px rgba(34, 211, 238, 0.08);
+    box-shadow: 0 0 0 3px var(--input-ring);
   }
   .input-base::placeholder {
     color: var(--muted-subtle);
   }
 
   .clubber-card {
-    background: linear-gradient(145deg, rgba(26, 29, 43, 0.96), rgba(15, 17, 26, 0.96));
+    background: linear-gradient(145deg, #ffffff, #fafbfc);
     border: 1px solid var(--border);
     border-radius: 1rem;
     box-shadow: var(--shadow-card);
@@ -250,12 +274,12 @@ a {
   .clubber-card:hover {
     transform: translateY(-4px);
     border-color: var(--border-purple);
-    box-shadow: var(--shadow-card-hover), var(--shadow-purple);
+    box-shadow: var(--shadow-card-hover);
   }
 
   .glass {
-    background: rgba(26, 29, 43, 0.68);
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: rgba(255, 255, 255, 0.75);
+    border: 1px solid rgba(17, 24, 39, 0.06);
     backdrop-filter: blur(18px);
     -webkit-backdrop-filter: blur(18px);
   }
@@ -278,7 +302,7 @@ a {
   .clubber-button:hover {
     background-color: var(--primary-hover);
     transform: translateY(-1px);
-    box-shadow: 0 0 20px rgba(34, 211, 238, 0.3);
+    box-shadow: 0 6px 16px rgba(37, 99, 235, 0.25);
   }
   .clubber-button:active {
     background-color: var(--primary-active);
@@ -297,9 +321,9 @@ a {
     align-items: center;
     padding: 0.3rem 0.6rem;
     border-radius: 999px;
-    background-color: rgba(168, 85, 247, 0.18);
-    border: 1px solid rgba(168, 85, 247, 0.35);
-    color: #c084fc;
+    background-color: #ede9fe;
+    border: 1px solid #ddd6fe;
+    color: #6d28d9;
     font-size: 0.7rem;
     font-weight: 700;
     text-transform: uppercase;
@@ -310,9 +334,9 @@ a {
     align-items: center;
     padding: 0.3rem 0.6rem;
     border-radius: 999px;
-    background-color: rgba(249, 115, 22, 0.18);
-    border: 1px solid rgba(249, 115, 22, 0.35);
-    color: #fb923c;
+    background-color: #ffedd5;
+    border: 1px solid #fed7aa;
+    color: #c2410c;
     font-size: 0.7rem;
     font-weight: 700;
     text-transform: uppercase;
@@ -323,9 +347,9 @@ a {
     align-items: center;
     padding: 0.3rem 0.6rem;
     border-radius: 999px;
-    background-color: rgba(250, 204, 21, 0.18);
-    border: 1px solid rgba(250, 204, 21, 0.35);
-    color: #facc15;
+    background-color: #fef9c3;
+    border: 1px solid #fef08a;
+    color: #a16207;
     font-size: 0.7rem;
     font-weight: 700;
     text-transform: uppercase;
@@ -336,12 +360,12 @@ a {
     align-items: center;
     padding: 0.35rem 0.65rem;
     border-radius: 999px;
-    background: linear-gradient(135deg, #ec4899, #be185d);
+    background: linear-gradient(135deg, #2563eb, #1e3a8a);
     color: #ffffff;
     font-size: 0.7rem;
     font-weight: 800;
     text-transform: uppercase;
-    box-shadow: 0 0 15px rgba(236, 72, 153, 0.3);
+    box-shadow: 0 4px 10px rgba(37, 99, 235, 0.25);
   }
 
   .clubber-chip {
@@ -353,7 +377,7 @@ a {
     padding: 0.55rem 1rem;
     border: 1px solid var(--border);
     border-radius: 999px;
-    background-color: rgba(26, 29, 43, 0.8);
+    background-color: #ffffff;
     color: var(--muted);
     font-size: 0.875rem;
     font-weight: 600;
@@ -367,22 +391,21 @@ a {
     background-color: var(--card-hover);
   }
   .clubber-chip.active {
-    border-color: var(--accent-purple);
-    background: linear-gradient(135deg, rgba(168, 85, 247, 0.3), rgba(236, 72, 153, 0.2));
+    border-color: var(--primary);
+    background: var(--primary);
     color: #ffffff;
-    box-shadow: 0 0 18px rgba(168, 85, 247, 0.18);
+    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25);
   }
 
   .event-price {
     color: var(--primary);
     font-weight: 800;
-    text-shadow: 0 0 12px rgba(34, 211, 238, 0.25);
   }
 
   .hero-overlay {
     position: absolute;
     inset: 0;
-    background: linear-gradient(180deg, rgba(15, 17, 26, 0.05) 0%, rgba(15, 17, 26, 0.35) 50%, rgba(15, 17, 26, 0.98) 100%);
+    background: linear-gradient(180deg, rgba(17, 24, 39, 0.05) 0%, rgba(17, 24, 39, 0.35) 50%, rgba(17, 24, 39, 0.85) 100%);
     pointer-events: none;
   }
 
@@ -391,17 +414,16 @@ a {
   }
   .clubber-card:hover .event-image {
     transform: scale(1.05);
-    filter: brightness(1.08) saturate(1.15);
   }
 
   .neon-purple {
-    box-shadow: 0 0 25px rgba(168, 85, 247, 0.22);
+    box-shadow: 0 8px 20px rgba(30, 58, 138, 0.18);
   }
   .neon-cyan {
-    box-shadow: 0 0 25px rgba(34, 211, 238, 0.22);
+    box-shadow: 0 8px 20px rgba(37, 99, 235, 0.18);
   }
   .neon-pink {
-    box-shadow: 0 0 25px rgba(236, 72, 153, 0.22);
+    box-shadow: 0 8px 20px rgba(96, 165, 250, 0.2);
   }
 }
 

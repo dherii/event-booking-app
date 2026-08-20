@@ -1,6 +1,6 @@
-// src/features/admin/eventos/actions.ts
-'use server'
+'use server';
 
+import { revalidatePath } from 'next/cache';
 import { getSupabaseAdmin } from '@/src/config/supabase';
 import { createSupabaseServerClient } from '@/src/config/supabase-server';
 
@@ -12,10 +12,13 @@ interface LoteInput {
   capacidadePessoas?: number | null;
 }
 
-interface AtracaoInput {
-  nomeArtista: string;
+interface AtividadeInput {
+  nomeArtista: string; // Título da Atividade / Oficina
   horario?: string | null;
   fotoUrl?: string | null;
+  localSala?: string | null;
+  vagasTotais?: number | null;
+  descricao?: string | null;
 }
 
 interface EventoInput {
@@ -29,11 +32,10 @@ interface EventoInput {
   classificacaoEtaria?: number;
   bannerUrl?: string | null;
   lotes: LoteInput[];
-  atracoes?: AtracaoInput[];
+  atracoes?: AtividadeInput[];
 }
 
 export async function criarEventoComLotes(data: EventoInput) {
-  // 1. Confirma quem está logado e a que estabelecimento ele pertence
   const supabaseAuth = await createSupabaseServerClient();
   const { data: { user } } = await supabaseAuth.auth.getUser();
 
@@ -56,14 +58,6 @@ export async function criarEventoComLotes(data: EventoInput) {
     throw new Error('Você não tem permissão para criar eventos.');
   }
 
-  if (!profile.estabelecimento_id) {
-    throw new Error(
-      'Seu usuário ainda não está vinculado a nenhum estabelecimento. Fale com o super_admin.'
-    );
-  }
-
-  // 2. Insere o evento já com estabelecimento_id (não vem mais do formulário —
-  //    isso evita que alguém tente criar evento pra outro estabelecimento)
   const supabase = getSupabaseAdmin();
 
   const { data: evento, error: errEvento } = await supabase
@@ -78,7 +72,7 @@ export async function criarEventoComLotes(data: EventoInput) {
       categoria: data.categoria,
       classificacao_etaria: data.classificacaoEtaria ?? 18,
       banner_url: data.bannerUrl ?? null,
-      estabelecimento_id: profile.estabelecimento_id,
+      estabelecimento_id: profile.estabelecimento_id ?? null,
     })
     .select()
     .single();
@@ -88,7 +82,6 @@ export async function criarEventoComLotes(data: EventoInput) {
     throw new Error(errEvento.message);
   }
 
-  // 3. Insere os lotes — agora com tipo (ingresso/mesa/camarote) e capacidade
   const lotesParaInserir = data.lotes.map((l) => ({
     evento_id: evento.id,
     nome: l.nome,
@@ -103,33 +96,88 @@ export async function criarEventoComLotes(data: EventoInput) {
 
   if (errLotes) {
     console.error('Erro ao criar lotes:', errLotes);
-    // rollback manual — sem transação real porque são duas chamadas separadas
     await supabase.from('eventos').delete().eq('id', evento.id);
     throw new Error(errLotes.message);
   }
 
-  // 4. Insere as atrações (line-up), se houver — etapa opcional do wizard
-  const atracoesValidas = (data.atracoes ?? []).filter((a) => a.nomeArtista.trim());
+  const atividadesValidas = (data.atracoes ?? []).filter((a) => a.nomeArtista.trim());
 
-  if (atracoesValidas.length > 0) {
-    const atracoesParaInserir = atracoesValidas.map((a, index) => ({
-      evento_id: evento.id,
-      nome_artista: a.nomeArtista,
-      horario: a.horario || null,
-      foto_url: a.fotoUrl || null,
-      ordem: index,
-    }));
+  if (atividadesValidas.length > 0) {
+    const atividadesParaInserir = atividadesValidas.map((a) => {
+      const vagas = a.vagasTotais && a.vagasTotais > 0 ? a.vagasTotais : 60;
+      return {
+        evento_id: evento.id,
+        titulo: a.nomeArtista,
+        descricao: a.descricao || null,
+        local_sala: a.localSala || null,
+        data_horario: a.horario || data.dataInicio,
+        vagas_totais: vagas,
+        vagas_disponiveis: vagas,
+      };
+    });
 
-    const { error: errAtracoes } = await supabase.from('atracoes').insert(atracoesParaInserir);
+    const { error: errAtividades } = await supabase
+      .from('atividades')
+      .insert(atividadesParaInserir);
 
-    if (errAtracoes) {
-      console.error('Erro ao criar atrações:', errAtracoes);
-      // Não faz rollback do evento inteiro por causa disso — evento e lotes já
-      // estão válidos, o line-up pode ser adicionado depois manualmente.
+    if (errAtividades) {
+      console.error('Erro ao criar atividades do evento:', errAtividades);
     }
   }
 
+  revalidatePath('/admin/eventos');
+  revalidatePath('/');
+
   return { success: true, eventoId: evento.id };
+}
+
+export async function deletarEvento(eventoId: string) {
+  const supabaseAuth = await createSupabaseServerClient();
+  const { data: { user } } = await supabaseAuth.auth.getUser();
+  if (!user) throw new Error('Você precisa estar logado.');
+
+  const { data: profile } = await supabaseAuth
+    .from('profiles')
+    .select('estabelecimento_id, role')
+    .eq('id', user.id)
+    .single();
+
+  const papeisPermitidos = ['super_admin', 'dono_estabelecimento'];
+  if (!profile || !papeisPermitidos.includes(profile.role)) {
+    throw new Error('Você não tem permissão para deletar eventos.');
+  }
+
+  const supabase = getSupabaseAdmin();
+
+  const { data: evento, error: fetchError } = await supabase
+    .from('eventos')
+    .select('estabelecimento_id')
+    .eq('id', eventoId)
+    .single();
+
+  if (fetchError || !evento) throw new Error('Evento não encontrado.');
+
+  if (
+    profile.role !== 'super_admin' &&
+    evento.estabelecimento_id &&
+    evento.estabelecimento_id !== profile.estabelecimento_id
+  ) {
+    throw new Error('Você não tem permissão para deletar este evento.');
+  }
+
+  const { error: deleteError } = await supabase
+    .from('eventos')
+    .delete()
+    .eq('id', eventoId);
+
+  if (deleteError) {
+    throw new Error(`Erro ao deletar evento: ${deleteError.message}`);
+  }
+
+  revalidatePath('/admin/eventos');
+  revalidatePath('/');
+
+  return { success: true };
 }
 
 export async function buscarEvento(eventoId: string) {
@@ -146,15 +194,17 @@ export async function buscarEvento(eventoId: string) {
   const supabase = getSupabaseAdmin();
   const { data: evento, error } = await supabase
     .from('eventos')
-    .select('*, lotes (*)')
+    .select('*, lotes (*), atividades (*)')
     .eq('id', eventoId)
     .single();
 
   if (error || !evento) throw new Error('Evento não encontrado.');
 
-  // Garante que o evento pertence ao estabelecimento do usuário logado
-  // (super_admin pode ver qualquer um)
-  if (profile?.role !== 'super_admin' && evento.estabelecimento_id !== profile?.estabelecimento_id) {
+  if (
+    profile?.role !== 'super_admin' &&
+    evento.estabelecimento_id &&
+    evento.estabelecimento_id !== profile?.estabelecimento_id
+  ) {
     throw new Error('Você não tem permissão para acessar este evento.');
   }
 
@@ -162,7 +212,7 @@ export async function buscarEvento(eventoId: string) {
 }
 
 interface LoteUpdateInput extends LoteInput {
-  id: string; // lote existente sendo editado
+  id: string;
 }
 
 interface EventoUpdateInput {
@@ -195,7 +245,6 @@ export async function atualizarEvento(eventoId: string, data: EventoUpdateInput)
 
   const supabase = getSupabaseAdmin();
 
-  // Confirma que o evento pertence ao estabelecimento certo antes de editar
   const { data: eventoAtual, error: fetchError } = await supabase
     .from('eventos')
     .select('estabelecimento_id')
@@ -204,11 +253,14 @@ export async function atualizarEvento(eventoId: string, data: EventoUpdateInput)
 
   if (fetchError || !eventoAtual) throw new Error('Evento não encontrado.');
 
-  if (profile.role !== 'super_admin' && eventoAtual.estabelecimento_id !== profile.estabelecimento_id) {
+  if (
+    profile.role !== 'super_admin' &&
+    eventoAtual.estabelecimento_id &&
+    eventoAtual.estabelecimento_id !== profile.estabelecimento_id
+  ) {
     throw new Error('Você não tem permissão para editar este evento.');
   }
 
-  // 1. Atualiza os dados gerais do evento
   const { error: errEvento } = await supabase
     .from('eventos')
     .update({
@@ -225,9 +277,6 @@ export async function atualizarEvento(eventoId: string, data: EventoUpdateInput)
 
   if (errEvento) throw new Error(errEvento.message);
 
-  // 2. Atualiza cada lote existente. Se a quantidade total mudou, ajusta a
-  //    disponível pela diferença (nunca deixa ficar negativa) — assim não
-  //    apaga vendas já feitas.
   for (const lote of data.lotes) {
     const { data: loteAtual } = await supabase
       .from('lotes')
@@ -255,12 +304,13 @@ export async function atualizarEvento(eventoId: string, data: EventoUpdateInput)
     if (errLote) throw new Error(errLote.message);
   }
 
+  revalidatePath('/admin/eventos');
+  revalidatePath('/');
+
   return { success: true };
 }
 
 export async function listarEventos() {
-  // Lista os eventos do estabelecimento do usuário logado (RLS também garante
-  // isso no nível do banco, mas filtramos aqui também pra clareza da query)
   const supabaseAuth = await createSupabaseServerClient();
   const { data: { user } } = await supabaseAuth.auth.getUser();
   if (!user) throw new Error('Não autenticado.');
@@ -272,10 +322,13 @@ export async function listarEventos() {
     .single();
 
   const supabase = getSupabaseAdmin();
-  let query = supabase.from('eventos').select('*, lotes (*)').order('data_inicio', { ascending: true });
+  let query = supabase
+    .from('eventos')
+    .select('*, lotes (*), atividades (*)')
+    .order('data_inicio', { ascending: true });
 
-  if (profile?.role !== 'super_admin') {
-    query = query.eq('estabelecimento_id', profile?.estabelecimento_id);
+  if (profile?.role !== 'super_admin' && profile?.estabelecimento_id) {
+    query = query.eq('estabelecimento_id', profile.estabelecimento_id);
   }
 
   const { data, error } = await query;

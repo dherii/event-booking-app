@@ -1,3 +1,4 @@
+// src/features/admin/components/EditarEventoForm.tsx
 'use client';
 
 import { useState } from 'react';
@@ -90,55 +91,87 @@ export function EditarEventoForm({ evento }: { evento: EventoEditavel }) {
     <form onSubmit={handleSubmit} className="space-y-6">
 
       {/* Dados gerais */}
-      <div className="bg-card border border-border rounded-2xl p-6 space-y-4">
-        <h2 className="text-sm font-semibold text-foreground">Informações gerais</h2>
+      <div className="bg-white border border-slate-200/80 rounded-2xl p-6 shadow-sm space-y-4">
+        <h2 className="text-base font-semibold text-slate-900 border-b border-slate-100 pb-3">Informações gerais</h2>
 
         <div>
-          <label className="block text-xs font-medium text-foreground mb-1">Nome do evento</label>
-          <input className="input-base" value={nome} onChange={(e) => setNome(e.target.value)} required />
+          <label className="block text-xs font-medium text-slate-700 mb-1.5">Nome do evento</label>
+          <input
+            className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+            value={nome}
+            onChange={(e) => setNome(e.target.value)}
+            required
+          />
         </div>
 
         <div>
-          <label className="block text-xs font-medium text-foreground mb-1">Descrição</label>
-          <textarea className="input-base resize-none" rows={3} value={descricao} onChange={(e) => setDescricao(e.target.value)} />
+          <label className="block text-xs font-medium text-slate-700 mb-1.5">Descrição</label>
+          <textarea
+            className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all resize-none"
+            rows={3}
+            value={descricao}
+            onChange={(e) => setDescricao(e.target.value)}
+          />
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
-            <label className="block text-xs font-medium text-foreground mb-1">Data de início</label>
-            <input type="date" className="input-base" value={dataInicio} onChange={(e) => setDataInicio(e.target.value)} required />
+            <label className="block text-xs font-medium text-slate-700 mb-1.5">Data de início</label>
+            <input
+              type="date"
+              className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+              value={dataInicio}
+              onChange={(e) => setDataInicio(e.target.value)}
+              required
+            />
           </div>
           <div>
-            <label className="block text-xs font-medium text-foreground mb-1">Data de encerramento</label>
-            <input type="date" className="input-base" value={dataFim} min={dataInicio} onChange={(e) => setDataFim(e.target.value)} required />
+            <label className="block text-xs font-medium text-slate-700 mb-1.5">Data de encerramento</label>
+            <input
+              type="date"
+              className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+              value={dataFim}
+              min={dataInicio}
+              onChange={(e) => setDataFim(e.target.value)}
+              required
+            />
           </div>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
-            <label className="block text-xs font-medium text-foreground mb-1">Local</label>
-            <input className="input-base" value={local} onChange={(e) => setLocal(e.target.value)} />
+            <label className="block text-xs font-medium text-slate-700 mb-1.5">Local</label>
+            <input
+              className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+              value={local}
+              onChange={(e) => setLocal(e.target.value)}
+            />
           </div>
           <div>
-            <label className="block text-xs font-medium text-foreground mb-1">Categoria</label>
-            <input className="input-base" value={categoria} onChange={(e) => setCategoria(e.target.value)} placeholder="Festa, Show, Open Bar..." />
+            <label className="block text-xs font-medium text-slate-700 mb-1.5">Categoria</label>
+            <input
+              className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+              value={categoria}
+              onChange={(e) => setCategoria(e.target.value)}
+              placeholder="Festa, Show, Open Bar..."
+            />
           </div>
         </div>
       </div>
 
       {/* Lotes */}
-      <div className="bg-card border border-border rounded-2xl p-6 space-y-4">
-        <h2 className="text-sm font-semibold text-foreground">Lotes</h2>
+      <div className="bg-white border border-slate-200/80 rounded-2xl p-6 shadow-sm space-y-4">
+        <h2 className="text-base font-semibold text-slate-900 border-b border-slate-100 pb-3">Lotes</h2>
 
         {lotes.map((lote) => (
-          <div key={lote.id} className="border border-border rounded-xl p-4 space-y-3">
+          <div key={lote.id} className="border border-slate-200 rounded-xl p-4 bg-slate-50/50 space-y-3">
             <input
-              className="w-full text-sm font-medium text-foreground bg-transparent outline-none"
+              className="w-full text-sm font-semibold text-slate-900 bg-transparent border-b border-transparent hover:border-slate-300 focus:border-blue-500 outline-none pb-1 transition-all"
               value={lote.nome}
               onChange={(e) => updateLote(lote.id, { nome: e.target.value })}
             />
 
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
               {TIPOS_LOTE.map(({ value, label, icon: Icon }) => (
                 <button
                   key={value}
@@ -147,10 +180,10 @@ export function EditarEventoForm({ evento }: { evento: EventoEditavel }) {
                     tipo: value,
                     capacidade_pessoas: value === 'ingresso' ? null : (lote.capacidade_pessoas ?? 4),
                   })}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition-all ${
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition-all cursor-pointer ${
                     lote.tipo === value
-                      ? 'bg-primary/10 border-primary text-primary'
-                      : 'border-border text-muted hover:border-input-border-focus hover:text-foreground'
+                      ? 'bg-blue-50 border-blue-600 text-blue-600 font-semibold shadow-xs'
+                      : 'bg-white border-slate-200 text-slate-600 hover:border-slate-300 hover:text-slate-900'
                   }`}
                 >
                   <Icon size={13} />
@@ -161,26 +194,33 @@ export function EditarEventoForm({ evento }: { evento: EventoEditavel }) {
 
             <div className={`grid grid-cols-1 sm:grid-cols-2 ${lote.tipo !== 'ingresso' ? 'lg:grid-cols-3' : 'lg:grid-cols-2'} gap-3`}>
               <div>
-                <label className="block text-xs font-medium text-foreground mb-1">Preço (R$)</label>
+                <label className="block text-xs font-medium text-slate-700 mb-1">Preço (R$)</label>
                 <input
-                  type="number" min={0} step={0.01} className="input-base"
+                  type="number"
+                  min={0}
+                  step={0.01}
+                  className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
                   value={lote.preco}
                   onChange={(e) => updateLote(lote.id, { preco: Number(e.target.value) })}
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium text-foreground mb-1">Quantidade total</label>
+                <label className="block text-xs font-medium text-slate-700 mb-1">Quantidade total</label>
                 <input
-                  type="number" min={1} className="input-base"
+                  type="number"
+                  min={1}
+                  className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
                   value={lote.quantidade_total}
                   onChange={(e) => updateLote(lote.id, { quantidade_total: Number(e.target.value) })}
                 />
               </div>
               {lote.tipo !== 'ingresso' && (
                 <div>
-                  <label className="block text-xs font-medium text-foreground mb-1">Pessoas por mesa</label>
+                  <label className="block text-xs font-medium text-slate-700 mb-1">Pessoas por mesa/camarote</label>
                   <input
-                    type="number" min={1} className="input-base"
+                    type="number"
+                    min={1}
+                    className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
                     value={lote.capacidade_pessoas ?? ''}
                     onChange={(e) => updateLote(lote.id, { capacidade_pessoas: Number(e.target.value) })}
                   />
@@ -192,15 +232,17 @@ export function EditarEventoForm({ evento }: { evento: EventoEditavel }) {
       </div>
 
       {error && (
-        <p role="alert" className="bg-error-bg text-error-fg text-sm px-4 py-3 rounded-lg">{error}</p>
+        <p role="alert" className="bg-red-50 border border-red-200 text-red-600 text-sm px-4 py-3 rounded-xl">
+          {error}
+        </p>
       )}
 
-      <div className="flex items-center justify-end gap-3">
-        {salvo && <span className="text-sm text-success-fg font-medium">Salvo com sucesso!</span>}
+      <div className="flex items-center justify-end gap-3 pt-2">
+        {salvo && <span className="text-sm text-emerald-600 font-medium">Salvo com sucesso!</span>}
         <button
           type="submit"
           disabled={loading}
-          className="flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-semibold bg-primary hover:bg-primary-hover text-primary-fg transition-colors disabled:opacity-60"
+          className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold bg-blue-600 hover:bg-blue-700 text-white transition-all shadow-sm disabled:opacity-60 cursor-pointer"
         >
           {loading ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
           {loading ? 'Salvando…' : 'Salvar alterações'}

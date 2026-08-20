@@ -1,3 +1,4 @@
+// src/app/admin/page.tsx
 import { getDashboardData } from '@/src/features/admin/dashboard/actions';
 import MetricCards from '@/src/features/admin/components/MetricCards';
 import SalesChart from '@/src/features/admin/components/SalesChart';
@@ -23,15 +24,11 @@ type RawInscription = {
   lotes: RawLote[] | RawLote | null;
 };
 
-// ... seus imports permanecem os mesmos
-
 export default async function AdminDashboardPage() {
-  // 1. Agora extraímos o chartData junto com as inscrições
   const { inscricoes, chartData } = await getDashboardData();
 
   const data: Inscription[] = (Array.isArray(inscricoes) ? inscricoes : []).map(
     (i: RawInscription) => {
-      // ... sua lógica de mapeamento permanece a mesma
       const loteRaw = Array.isArray(i.lotes) ? i.lotes[0] : i.lotes;
       const eventoRaw = Array.isArray(loteRaw?.eventos)
         ? loteRaw?.eventos[0]
@@ -65,20 +62,20 @@ export default async function AdminDashboardPage() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8 max-w-7xl mx-auto pb-10">
       <div>
-        <h1 className="text-xl font-bold text-foreground">Dashboard</h1>
-        <p className="text-sm text-muted mt-0.5">
-  Visão geral do seu estabelecimento
+        <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Dashboard</h1>
+        <p className="text-sm text-slate-500 mt-1">
+          Visão geral e desempenho em tempo real do seu estabelecimento
         </p>
       </div>
 
       <MetricCards metrics={metrics} />
-      
-      {/* 2. Passamos os dados reais para o gráfico aqui */}
-      <SalesChart data={chartData} /> 
-      
-      <OverviewTable inscricoes={data} />
+
+      <div className="grid grid-cols-1 gap-8">
+        <SalesChart data={chartData} />
+        <OverviewTable inscricoes={data} />
+      </div>
     </div>
   );
 }

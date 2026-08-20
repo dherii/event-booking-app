@@ -1,9 +1,8 @@
-// src/features/admin/components/AdminShell.tsx
 'use client';
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import {
   LayoutDashboard,
   CalendarDays,
@@ -14,6 +13,10 @@ import {
   X,
   ChevronRight,
   Bell,
+  LogOut,
+  ExternalLink,
+  User,
+  MoreVertical,
 } from 'lucide-react';
 
 // ─── Tipos ────────────────────────────────────────────────────────────────────
@@ -64,7 +67,7 @@ function NavLink({ item, active, onClick }: { item: NavItem; active: boolean; on
         transition-all duration-150
         ${active
           ? 'bg-primary/10 text-primary'
-          : 'text-muted hover:text-foreground hover:bg-border'
+          : 'text-muted-foreground hover:text-foreground hover:bg-accent'
         }
       `}
     >
@@ -91,8 +94,16 @@ function Sidebar({
   userEmail: string;
   estabelecimentoNome: string;
 }) {
+  const [menuUserAberto, setMenuUserAberto] = useState(false);
+  const router = useRouter();
+
+  async function handleLogout() {
+    // Insira sua chamada de Logout aqui se usar Supabase ou NextAuth ex: await supabase.auth.signOut()
+    router.push('/login');
+  }
+
   return (
-    <aside className="flex flex-col h-full w-60 bg-card border-r border-border px-3 py-5">
+    <aside className="flex flex-col h-full w-60 bg-card border-r border-border px-3 py-5 relative">
       <div className="flex items-center justify-between px-2 mb-8">
         <div className="flex items-center gap-2.5">
           <div className="w-7 h-7 rounded-md bg-primary flex items-center justify-center shrink-0">
@@ -100,14 +111,14 @@ function Sidebar({
           </div>
           <div className="leading-tight">
             <p className="text-sm font-bold text-foreground truncate max-w-[9rem]">{estabelecimentoNome}</p>
-            <p className="text-[11px] text-muted">Painel Admin</p>
+            <p className="text-[11px] text-muted-foreground">Painel Admin</p>
           </div>
         </div>
 
         {onClose && (
           <button
             onClick={onClose}
-            className="p-1 rounded-md text-muted hover:text-foreground hover:bg-border transition-colors lg:hidden"
+            className="p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-accent transition-colors lg:hidden"
             aria-label="Fechar menu"
           >
             <X size={16} />
@@ -126,16 +137,64 @@ function Sidebar({
         ))}
       </nav>
 
-      <div className="px-2 pt-4 border-t border-border">
-        <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-full bg-primary/20 text-primary flex items-center justify-center text-xs font-bold shrink-0">
-            {iniciais(userNome)}
+      {/* Rodapé do Usuário com Menu Popover */}
+      <div className="relative pt-4 border-t border-border">
+        {menuUserAberto && (
+          <div className="absolute bottom-full left-0 right-0 mb-2 bg-card border border-border rounded-xl shadow-lg overflow-hidden z-50">
+            <div className="p-3 border-b border-border bg-accent/40">
+              <p className="text-xs font-semibold text-foreground truncate">{userNome}</p>
+              <p className="text-[11px] text-muted-foreground truncate">{userEmail}</p>
+            </div>
+
+            <div className="p-1 space-y-0.5">
+              <Link
+                href="/"
+                target="_blank"
+                prefetch={false}
+                className="flex items-center gap-2.5 px-3 py-2 text-xs font-medium text-foreground rounded-lg hover:bg-accent transition-colors"
+                onClick={() => setMenuUserAberto(false)}
+              >
+                <ExternalLink size={14} className="text-muted-foreground" />
+                Ver Plataforma
+              </Link>
+
+              <Link
+                href="/admin/configuracoes"
+                className="flex items-center gap-2.5 px-3 py-2 text-xs font-medium text-foreground rounded-lg hover:bg-accent transition-colors"
+                onClick={() => setMenuUserAberto(false)}
+              >
+                <User size={14} className="text-muted-foreground" />
+                Minha Conta
+              </Link>
+
+              <button
+                type="button"
+                onClick={handleLogout}
+                className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-medium text-rose-600 rounded-lg hover:bg-rose-500/10 transition-colors text-left cursor-pointer"
+              >
+                <LogOut size={14} className="text-rose-500" />
+                Sair da Conta
+              </button>
+            </div>
           </div>
-          <div className="leading-tight overflow-hidden">
-            <p className="text-xs font-medium text-foreground truncate">{userNome}</p>
-            <p className="text-[11px] text-muted truncate">{userEmail}</p>
+        )}
+
+        <button
+          type="button"
+          onClick={() => setMenuUserAberto(!menuUserAberto)}
+          className="w-full flex items-center justify-between p-2 rounded-lg hover:bg-accent transition-colors cursor-pointer text-left group"
+        >
+          <div className="flex items-center gap-2.5 min-w-0">
+            <div className="w-8 h-8 rounded-full bg-primary/20 text-primary flex items-center justify-center text-xs font-bold shrink-0">
+              {iniciais(userNome)}
+            </div>
+            <div className="leading-tight overflow-hidden">
+              <p className="text-xs font-medium text-foreground truncate">{userNome}</p>
+              <p className="text-[11px] text-muted-foreground truncate">{userEmail}</p>
+            </div>
           </div>
-        </div>
+          <MoreVertical size={16} className="text-muted-foreground group-hover:text-foreground shrink-0 ml-1" />
+        </button>
       </div>
     </aside>
   );
@@ -153,38 +212,47 @@ function Header({
   const current = NAV_ITEMS.find((i) => i.href === pathname);
 
   return (
-    <header className="h-14 flex items-center justify-between px-4 sm:px-6 border-b border-border bg-card shrink-0">
-      <div className="flex items-center gap-3">
+    <header className="h-16 flex items-center justify-between px-4 sm:px-8 border-b border-border bg-card/80 backdrop-blur-md sticky top-0 z-20 shrink-0">
+      <div className="flex items-center gap-4">
         <button
           onClick={onMenuClick}
-          className="p-1.5 rounded-md text-muted hover:text-foreground hover:bg-border transition-colors lg:hidden"
+          className="p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent transition-colors lg:hidden"
           aria-label="Abrir menu"
         >
           <Menu size={20} />
         </button>
 
-        <div className="flex items-center gap-1.5 text-sm">
-          <span className="text-muted">Admin</span>
-          {current && current.href !== '/admin' && (
-            <>
-              <ChevronRight size={14} className="text-muted" />
-              <span className="font-medium text-foreground">{current.label}</span>
-            </>
-          )}
+        {/* Título da Página Atual com Indicador */}
+        <div className="flex items-center gap-2">
+          <h1 className="text-sm sm:text-base font-bold text-foreground">
+            {current ? current.label : 'Painel'}
+          </h1>
+          <span className="hidden sm:inline-block text-xs px-2 py-0.5 rounded-full bg-primary/10 text-primary font-medium">
+            Ativo
+          </span>
         </div>
       </div>
 
-      <div className="flex items-center gap-2">
+      {/* Lado Direito: Ações e Perfil Rápido */}
+      <div className="flex items-center gap-3">
+        {/* Notificações */}
         <button
-          className="relative p-2 rounded-lg text-muted hover:text-foreground hover:bg-border transition-colors"
+          className="relative p-2 rounded-xl text-muted-foreground hover:text-foreground hover:bg-accent transition-colors border border-border/40"
           aria-label="Notificações"
         >
           <Bell size={18} />
-          <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 bg-primary rounded-full" />
+          <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-primary rounded-full ring-2 ring-card" />
         </button>
 
-        <div className="w-8 h-8 rounded-full bg-primary/20 text-primary flex items-center justify-center text-xs font-bold">
-          {iniciais(userNome)}
+        <div className="h-5 w-px bg-border mx-1 hidden sm:block" />
+
+        <div className="flex items-center gap-2.5">
+          <div className="w-8 h-8 rounded-full bg-primary/20 text-primary flex items-center justify-center text-xs font-bold ring-2 ring-primary/10">
+            {iniciais(userNome)}
+          </div>
+          <span className="text-xs font-semibold text-foreground hidden md:inline-block">
+            {userNome.split(' ')[0]}
+          </span>
         </div>
       </div>
     </header>
