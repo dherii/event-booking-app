@@ -35,6 +35,12 @@ export function PerfilForm({ perfil }: { perfil: MeuPerfil }) {
     return;
   }
 
+    
+
+    setUploadingAvatar(true);
+    setError(null);
+
+
     try {
       const supabase = createSupabaseBrowserClient();
       const { data: { user } } = await supabase.auth.getUser();
