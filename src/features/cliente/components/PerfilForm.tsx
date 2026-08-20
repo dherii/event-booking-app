@@ -22,11 +22,18 @@ export function PerfilForm({ perfil }: { perfil: MeuPerfil }) {
   const [salvo, setSalvo] = useState(false);
 
   async function handleAvatarChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (!file) return;
+  const file = e.target.files?.[0];
+  if (!file) return;
 
-    setUploadingAvatar(true);
-    setError(null);
+  if (!file.type.startsWith('image/')) {
+    setError('Por favor, selecione um arquivo de imagem válido.');
+    return;
+  }
+
+  if (file.size > 5 * 1024 * 1024) {
+    setError('A imagem deve ter no máximo 5MB.');
+    return;
+  }
 
     try {
       const supabase = createSupabaseBrowserClient();

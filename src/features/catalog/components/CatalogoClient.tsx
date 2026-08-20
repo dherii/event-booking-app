@@ -163,9 +163,10 @@ export function CatalogoClient({ eventos, favoritosIds = [] }: { eventos: Evento
         <div>
           <h2 className="flex items-center gap-2 text-xl font-black text-foreground">
             <Zap size={20} className="fill-primary text-primary" />
-            {busca ? `Resultados para "${searchParams.get('q')}"` : 'Festas em Alta'}
+            {busca ? `Resultados para "${searchParams.get('q')}"` : 'Seu próximo evento começa aqui'}
           </h2>
-          {!busca && <p className="mt-1 text-sm text-muted">Encontre seu próximo rolê.</p>}
+          {!busca && <p className="mt-1 text-sm text-muted">Encontre eventos acadêmicos e viva novas experiências.
+.</p>}
         </div>
 
         <div className="flex items-center gap-3">

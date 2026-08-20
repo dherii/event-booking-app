@@ -2,7 +2,7 @@ import { getSupabaseAdmin } from '@/src/config/supabase';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import PixCopyButton from '@/src/features/checkout/components/PixCopyButton';
-import { Clock } from 'lucide-react';
+import { Clock, ShieldCheck, ArrowLeft, QrCode } from 'lucide-react';
 
 interface CheckoutPageProps {
   params: Promise<{ id: string }>;
@@ -26,53 +26,94 @@ export default async function CheckoutPage({ params }: CheckoutPageProps) {
   }
 
   const evento = inscricao.lotes?.eventos;
-  const valorTotal = Number(inscricao.lotes?.preco || 0);
+  const lote = inscricao.lotes;
+  const valorTotal = Number(lote?.preco || 0);
 
   return (
-    <main className="min-h-screen bg-background text-foreground flex flex-col items-center justify-center p-4">
-      <div className="max-w-md w-full clubber-card p-6 text-center">
-        <span className="inline-flex items-center gap-1.5 text-xs font-bold bg-warning-bg text-warning-fg px-3 py-1 rounded-full uppercase tracking-wider">
-          <Clock size={12} />
-          Aguardando Pagamento
-        </span>
-
-        <h1 className="text-2xl font-black mt-4">Falta pouco!</h1>
-
-        <p className="text-muted text-sm mt-1">
-          Reserve seu lugar em <strong className="text-foreground">{evento?.nome || 'Inscrição'}</strong>
-        </p>
-
-        {/* QR Code Simulado */}
-        <div className="my-6 p-4 bg-white rounded-xl inline-block mx-auto">
-          <div className="w-48 h-48 bg-gray-200 flex flex-col items-center justify-center text-gray-800 border-2 border-dashed border-gray-400 rounded-lg">
-            <span className="text-xs font-bold uppercase tracking-widest text-center px-2">
-              [ QR Code Pix Simulado ]
-            </span>
-          </div>
-        </div>
-
-        <div className="text-left bg-background p-4 rounded-xl border border-border mb-6">
-          <div className="flex justify-between text-sm mb-3">
-            <span className="text-muted">Total a pagar:</span>
-            <span className="font-bold text-success-fg">R$ {valorTotal.toFixed(2)}</span>
-          </div>
-
-          <div className="flex flex-col gap-2 text-xs">
-            <span className="text-muted">Código Copia e Cola:</span>
-            <PixCopyButton codigo={inscricao.txid_pix} />
-          </div>
-        </div>
-
+    <main className="min-h-screen bg-background-secondary text-foreground flex flex-col items-center justify-center p-4 py-8">
+      
+      {/* Botão topo para voltar */}
+      <div className="max-w-md w-full mb-4">
         <Link
-          href="/"
-          className="w-full block bg-primary hover:bg-primary-hover text-primary-fg text-center font-bold py-2.5 px-4 rounded-lg shadow-neon transition-all active:scale-[0.99]"
+          href={`/evento/${evento?.id || ''}`}
+          className="inline-flex items-center gap-1.5 text-xs font-semibold text-muted hover:text-foreground transition-colors"
         >
-          Voltar ao Catálogo
+          <ArrowLeft size={14} />
+          Voltar para o evento
         </Link>
+      </div>
 
-        <p className="text-xs text-muted mt-4">
-          O lote será liberado imediatamente após a confirmação do Pix.
-        </p>
+      <div className="max-w-md w-full bg-card border border-border rounded-2xl p-6 sm:p-8 shadow-card text-center space-y-6">
+        
+        {/* Header com Alerta de Status */}
+        <div className="space-y-3">
+          <span className="inline-flex items-center gap-1.5 text-xs font-bold bg-warning-bg text-warning-fg px-3 py-1 rounded-full uppercase tracking-wider border border-warning-fg/20">
+            <Clock size={13} />
+            Aguardando Pagamento
+          </span>
+
+          <h1 className="text-2xl font-black text-foreground">Falta pouco!</h1>
+
+          <p className="text-sm text-muted">
+            Reserve seu lugar em{' '}
+            <strong className="text-foreground font-semibold">{evento?.nome || 'Inscrição'}</strong>
+          </p>
+        </div>
+
+        {/* Resumo do Lote Comprado */}
+        <div className="bg-background-secondary border border-border rounded-xl p-3.5 flex items-center justify-between text-left">
+          <div>
+            <p className="text-xs text-muted">Item selecionado</p>
+            <p className="text-sm font-bold text-foreground">{lote?.nome || 'Ingresso'}</p>
+          </div>
+          <div className="text-right">
+            <p className="text-xs text-muted">Total a pagar</p>
+            <p className="text-base font-extrabold text-success-fg">
+              R$ {valorTotal.toFixed(2)}
+            </p>
+          </div>
+        </div>
+
+        {/* Área do QR Code Pix */}
+        <div className="space-y-3">
+          <div className="p-4 bg-white rounded-2xl border border-border shadow-inner inline-block mx-auto">
+            {/* Box simulado visual de QR Code com bordas estruturadas */}
+            <div className="w-48 h-48 bg-slate-50 flex flex-col items-center justify-center border-2 border-dashed border-slate-300 rounded-xl p-3 text-slate-500 relative">
+              <QrCode size={40} className="text-primary mb-2 opacity-80" />
+              <span className="text-[11px] font-bold uppercase tracking-wider text-center text-slate-700">
+                Escaneie o QR Code no seu banco
+              </span>
+            </div>
+          </div>
+
+          <p className="text-xs text-muted">
+            Abra o aplicativo do seu banco, escolha <strong>Pix</strong> e escaneie o código acima.
+          </p>
+        </div>
+
+        {/* Campo Copia e Cola */}
+        <div className="text-left bg-background-secondary p-4 rounded-xl border border-border space-y-2">
+          <span className="text-xs font-semibold text-muted block">
+            Ou use o código Pix Copia e Cola:
+          </span>
+          <PixCopyButton codigo={inscricao.txid_pix} />
+        </div>
+
+        {/* Ação principal */}
+        <div className="space-y-3 pt-2">
+          <Link
+            href="/"
+            className="w-full flex items-center justify-center gap-2 bg-primary hover:bg-primary-hover text-white font-bold py-3 px-4 rounded-xl shadow-neon transition-all active:scale-[0.99]"
+          >
+            Voltar ao Catálogo
+          </Link>
+
+          <div className="flex items-center justify-center gap-1.5 text-xs text-muted-subtle pt-1">
+            <ShieldCheck size={14} className="text-success-fg" />
+            <span>Confirmação automática do lote após o Pix.</span>
+          </div>
+        </div>
+
       </div>
     </main>
   );

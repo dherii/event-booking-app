@@ -1,6 +1,9 @@
-// src/features/admin/participantes/types.ts
-
 export type StatusPagamento = 'pago' | 'pendente' | 'cancelado' | 'cortesia';
+
+export interface FrequenciaDia {
+  diaNumero: number;
+  presente: boolean;
+}
 
 export interface Inscrito {
   id: string;
@@ -10,6 +13,7 @@ export interface Inscrito {
   telefone: string;
   evento: string;
   eventoId: string;
+  diasEvento: number; // Duração total em dias do evento
   atividade: string;
   lote: string;
   valor: number;
@@ -18,6 +22,7 @@ export interface Inscrito {
   checkinAt: string | null;
   criadoEm: string;
   codigoIngresso: string;
+  frequencias?: FrequenciaDia[];
 }
 
 // ─── Mock data ────────────────────────────────────────────────────────────────
@@ -31,6 +36,7 @@ export const MOCK_INSCRITOS: Inscrito[] = [
     telefone: '(88) 99201-1234',
     evento: 'Semana de TI 2025',
     eventoId: 'ti-2025',
+    diasEvento: 4,
     atividade: 'Acesso Geral',
     lote: 'Lote 2',
     valor: 80,
@@ -39,6 +45,10 @@ export const MOCK_INSCRITOS: Inscrito[] = [
     checkinAt: '2025-06-25T08:42:00',
     criadoEm: '2025-06-10T14:23:00',
     codigoIngresso: 'TI25-A001',
+    frequencias: [
+      { diaNumero: 1, presente: true },
+      { diaNumero: 2, presente: true },
+    ],
   },
   {
     id: '2',
@@ -48,6 +58,7 @@ export const MOCK_INSCRITOS: Inscrito[] = [
     telefone: '(88) 98872-5678',
     evento: 'Semana de TI 2025',
     eventoId: 'ti-2025',
+    diasEvento: 4,
     atividade: 'Acesso VIP',
     lote: 'Lote 1 — VIP',
     valor: 120,
@@ -56,6 +67,7 @@ export const MOCK_INSCRITOS: Inscrito[] = [
     checkinAt: null,
     criadoEm: '2025-06-11T09:05:00',
     codigoIngresso: 'TI25-A002',
+    frequencias: [],
   },
   {
     id: '3',
@@ -65,6 +77,7 @@ export const MOCK_INSCRITOS: Inscrito[] = [
     telefone: '(88) 99334-9012',
     evento: 'Workshop de UX',
     eventoId: 'ux-2025',
+    diasEvento: 2,
     atividade: 'Acesso Geral',
     lote: 'Lote 1',
     valor: 40,
@@ -73,6 +86,7 @@ export const MOCK_INSCRITOS: Inscrito[] = [
     checkinAt: null,
     criadoEm: '2025-06-12T11:30:00',
     codigoIngresso: 'UX25-A001',
+    frequencias: [{ diaNumero: 1, presente: true }],
   },
   {
     id: '4',
@@ -82,6 +96,7 @@ export const MOCK_INSCRITOS: Inscrito[] = [
     telefone: '(88) 99101-3456',
     evento: 'Semana de TI 2025',
     eventoId: 'ti-2025',
+    diasEvento: 4,
     atividade: 'Acesso Geral',
     lote: 'Lote 2',
     valor: 80,
@@ -90,6 +105,7 @@ export const MOCK_INSCRITOS: Inscrito[] = [
     checkinAt: null,
     criadoEm: '2025-06-08T16:14:00',
     codigoIngresso: 'TI25-A003',
+    frequencias: [],
   },
   {
     id: '5',
@@ -99,6 +115,7 @@ export const MOCK_INSCRITOS: Inscrito[] = [
     telefone: '(88) 98765-7890',
     evento: 'Workshop de UX',
     eventoId: 'ux-2025',
+    diasEvento: 2,
     atividade: 'Acesso Geral',
     lote: 'Lote 1',
     valor: 40,
@@ -107,6 +124,10 @@ export const MOCK_INSCRITOS: Inscrito[] = [
     checkinAt: '2025-06-25T09:10:00',
     criadoEm: '2025-06-13T08:55:00',
     codigoIngresso: 'UX25-A002',
+    frequencias: [
+      { diaNumero: 1, presente: true },
+      { diaNumero: 2, presente: true },
+    ],
   },
   {
     id: '6',
@@ -116,6 +137,7 @@ export const MOCK_INSCRITOS: Inscrito[] = [
     telefone: '(88) 99556-2345',
     evento: 'Semana de TI 2025',
     eventoId: 'ti-2025',
+    diasEvento: 4,
     atividade: 'Acesso Geral',
     lote: 'Cortesia',
     valor: 0,
@@ -124,6 +146,7 @@ export const MOCK_INSCRITOS: Inscrito[] = [
     checkinAt: null,
     criadoEm: '2025-06-15T10:00:00',
     codigoIngresso: 'TI25-A004',
+    frequencias: [],
   },
   {
     id: '7',
@@ -133,6 +156,7 @@ export const MOCK_INSCRITOS: Inscrito[] = [
     telefone: '(88) 99887-6543',
     evento: 'Workshop de UX',
     eventoId: 'ux-2025',
+    diasEvento: 2,
     atividade: 'Acesso Geral',
     lote: 'Lote 1',
     valor: 40,
@@ -141,6 +165,7 @@ export const MOCK_INSCRITOS: Inscrito[] = [
     checkinAt: null,
     criadoEm: '2025-06-14T13:22:00',
     codigoIngresso: 'UX25-A003',
+    frequencias: [],
   },
   {
     id: '8',
@@ -150,6 +175,7 @@ export const MOCK_INSCRITOS: Inscrito[] = [
     telefone: '(88) 99223-1122',
     evento: 'Semana de TI 2025',
     eventoId: 'ti-2025',
+    diasEvento: 4,
     atividade: 'Acesso VIP',
     lote: 'Lote 1 — VIP',
     valor: 120,
@@ -158,10 +184,16 @@ export const MOCK_INSCRITOS: Inscrito[] = [
     checkinAt: '2025-06-25T08:58:00',
     criadoEm: '2025-06-09T17:40:00',
     codigoIngresso: 'TI25-A005',
+    frequencias: [
+      { diaNumero: 1, presente: true },
+      { diaNumero: 2, presente: true },
+      { diaNumero: 3, presente: true },
+      { diaNumero: 4, presente: true },
+    ],
   },
 ];
 
 export const MOCK_EVENTOS = [
-  { id: 'ti-2025',  label: 'Semana de TI 2025' },
-  { id: 'ux-2025',  label: 'Workshop de UX'    },
+  { id: 'ti-2025', label: 'Semana de TI 2025' },
+  { id: 'ux-2025', label: 'Workshop de UX' },
 ];

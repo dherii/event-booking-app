@@ -1,4 +1,3 @@
-// app/admin/eventos/novo/page.tsx
 'use client';
 
 import { useState } from 'react';
@@ -69,7 +68,7 @@ function validateStep(step: number, state: WizardState): string | null {
   }
   if (step === 1) {
     const semNome = state.atracoes.atracoes.some((a) => !a.nomeArtista.trim());
-    if (semNome) return 'Toda atração precisa de um nome — ou remova a linha em branco.';
+    if (semNome) return 'Toda atração ou atividade precisa de um nome — ou remova a linha em branco.';
   }
   if (step === 2) {
     if (state.lotes.lotes.length === 0) return 'Adicione ao menos um lote de ingressos.';
@@ -127,8 +126,6 @@ export default function NovoEventoPage() {
     setError(null);
 
     try {
-      // 1. Se o usuário selecionou um banner, faz o upload real pro Storage
-      //    antes de criar o evento — precisamos da URL pública primeiro.
       let bannerUrl: string | null = null;
 
       if (state.evento.banner) {
@@ -155,7 +152,6 @@ export default function NovoEventoPage() {
         bannerUrl = publicUrlData.publicUrl;
       }
 
-      // 2. Cria o evento já com a URL real do banner (ou null, se não enviou)
       await criarEventoComLotes({
         nome:                state.evento.nome,
         descricao:           state.evento.descricao,
@@ -179,6 +175,9 @@ export default function NovoEventoPage() {
             nomeArtista: a.nomeArtista,
             horario:     a.horario || null,
             fotoUrl:     a.fotoUrl || null,
+            localSala:   a.localSala || null,
+            vagasTotais: a.vagasTotais || 60,
+            descricao:   a.descricao || null,
           })),
       });
 
@@ -195,8 +194,6 @@ export default function NovoEventoPage() {
 
   return (
     <div className="max-w-2xl mx-auto space-y-8">
-
-      {/* Cabeçalho da página */}
       <div className="flex items-center gap-3">
         <button
           type="button"
@@ -214,12 +211,9 @@ export default function NovoEventoPage() {
         </div>
       </div>
 
-      {/* Stepper */}
       <WizardStepper steps={STEPS} current={step} />
 
-      {/* Card do conteúdo */}
       <div className="bg-card border border-border rounded-2xl p-6 shadow-sm">
-
         <div className="mb-6 pb-4 border-b border-border">
           <h2 className="text-base font-semibold text-foreground">{STEPS[step].label}</h2>
           <p className="text-sm text-muted mt-0.5">{STEPS[step].description}</p>

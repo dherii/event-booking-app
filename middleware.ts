@@ -1,9 +1,13 @@
-// middleware.ts (raiz do projeto, mesmo nível de app/)
+// middleware.ts
 import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 
 export async function middleware(request: NextRequest) {
-  let response = NextResponse.next({ request });
+  let response = NextResponse.next({
+    request: {
+      headers: request.headers,
+    },
+  });
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -14,43 +18,54 @@ export async function middleware(request: NextRequest) {
           return request.cookies.getAll();
         },
         setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value));
-          response = NextResponse.next({ request });
-          cookiesToSet.forEach(({ name, value, options }) =>
-            response.cookies.set(name, value, options),
-          );
+          cookiesToSet.forEach(({ name, value }) => {
+            request.cookies.set(name, value);
+          });
+          response = NextResponse.next({
+            request: {
+              headers: request.headers,
+            },
+          });
+          cookiesToSet.forEach(({ name, value, options }) => {
+            response.cookies.set(name, value, options);
+          });
         },
       },
     },
   );
 
-  const { data: { user } } = await supabase.auth.getUser();
-
   const isAdminRoute = request.nextUrl.pathname.startsWith('/admin');
 
-  if (isAdminRoute) {
-    if (!user) {
+  if (!isAdminRoute) {
+    return response;
+  }
+
+  try {
+    // 1. Validar usuário
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+
+    if (userError || !user) {
       const loginUrl = new URL('/auth/login', request.url);
       loginUrl.searchParams.set('redirect', request.nextUrl.pathname);
       return NextResponse.redirect(loginUrl);
     }
 
-    // Confere o papel do usuário — só dono/staff/super_admin entram no admin
-    const { data: profile } = await supabase
+    // 2. Buscar perfil
+    const { data: profile, error: profileError } = await supabase
       .from('profiles')
-      .select('role, estabelecimento_id')
+      .select('role')
       .eq('id', user.id)
       .single();
 
-    const papeisPermitidos = ['super_admin', 'dono_estabelecimento', 'staff_checkin'];
-    if (!profile || !papeisPermitidos.includes(profile.role)) {
-      // Cliente comum sem estabelecimento — oferece o onboarding em vez de
-      // só bloquear, já que pode ser alguém querendo cadastrar o negócio dele
-      if (profile && !profile.estabelecimento_id) {
-        return NextResponse.redirect(new URL('/onboarding', request.url));
-      }
+    const papeisPermitidos = ['super_admin', 'dono_estabelecimento', 'staff_checkin', 'cliente'];
+
+    if (profileError || !profile || !papeisPermitidos.includes(profile.role)) {
       return NextResponse.redirect(new URL('/', request.url));
     }
+
+  } catch (error) {
+    console.error('Middleware: Erro crítico ao validar sessão.', error);
+    return NextResponse.redirect(new URL('/auth/login', request.url));
   }
 
   return response;

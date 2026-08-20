@@ -4,22 +4,33 @@ import { ConfiguracoesForm } from '@/src/features/admin/configuracoes/components
 import { EquipeStaff } from '@/src/features/admin/configuracoes/components/EquipeStaff';
 
 export default async function ConfiguracoesPage() {
-  const [estabelecimento, equipe] = await Promise.all([
-    buscarEstabelecimento(),
-    listarEquipe(),
-  ]);
+  let estabelecimento = null;
+  let equipe: Awaited<ReturnType<typeof listarEquipe>> = [];
+
+  try {
+    const [estabRes, equipeRes] = await Promise.all([
+      buscarEstabelecimento().catch(() => null),
+      listarEquipe().catch(() => []),
+    ]);
+    estabelecimento = estabRes;
+    equipe = equipeRes ?? [];
+  } catch (err) {
+    console.error('Erro ao carregar configurações:', err);
+  }
 
   return (
-    <div className="max-w-2xl mx-auto space-y-8">
-      <div>
-        <h1 className="text-xl font-bold text-foreground">Configurações</h1>
-        <p className="text-sm text-muted mt-0.5">
-          Dados do estabelecimento e gestão da equipe.
-        </p>
-      </div>
+    <div className="min-h-screen bg-slate-50/60 text-slate-800 p-6">
+      <div className="max-w-3xl mx-auto space-y-8">
+        <div>
+          <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Configurações</h1>
+          <p className="text-sm text-slate-500 mt-1">
+            Gestão do estabelecimento e controle da equipe.
+          </p>
+        </div>
 
-      <ConfiguracoesForm estabelecimento={estabelecimento} />
-      <EquipeStaff membros={equipe} />
+        <ConfiguracoesForm estabelecimento={estabelecimento} />
+        <EquipeStaff membros={equipe} />
+      </div>
     </div>
   );
 }

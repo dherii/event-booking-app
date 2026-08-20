@@ -1,9 +1,9 @@
 import { Suspense } from 'react';
-import { supabase } from '@/src/config/supabase';
 import { createSupabaseServerClient } from '@/src/config/supabase-server';
 import { CatalogoClient } from '@/src/features/catalog/components/CatalogoClient';
 import { SiteHeader } from '@/src/features/catalog/components/SiteHeader';
 import { listarMeusFavoritosIds } from '@/src/features/catalog/actions';
+import { BannerCarrossel } from '@/src/features/public/components/BannerCarrossel';
 import { Ticket } from 'lucide-react';
 
 export const revalidate = 0;
@@ -34,24 +34,47 @@ export default async function HomePage() {
     avatarUrl = profile?.avatar_url ?? null;
   }
 
-  const { data: eventos, error } = await supabase
+  // Filtra apenas eventos cuja data de fim é maior ou igual ao momento atual
+  const agoraIso = new Date().toISOString();
+
+  const { data: eventos, error } = await supabaseAuth
     .from('eventos')
     .select(`
       *,
       estabelecimentos ( id, nome, slug, logo_url ),
       lotes ( * )
     `)
-    .order('created_at', { ascending: false });
+    .gte('data_fim', agoraIso)
+    .order('data_inicio', { ascending: true });
 
   const favoritosIds = user ? await listarMeusFavoritosIds() : [];
+
+  // Formata os eventos para o padrão que o BannerCarrossel espera
+  const eventosBanners = (eventos || []).slice(0, 5).map((evento) => ({
+    id: evento.id,
+    titulo: evento.titulo,
+    bannerUrl: evento.banner_url || '/placeholder-banner.jpg', 
+    data: new Date(evento.data_inicio).toLocaleDateString('pt-BR', {
+      day: '2-digit',
+      month: 'long',
+      year: 'numeric',
+    }),
+    local: evento.local || evento.estabelecimentos?.nome || 'Local a definir',
+    linkHref: `/eventos/${evento.id}`,
+  }));
 
   return (
     <main className="min-h-screen bg-background text-foreground">
       <Suspense fallback={<div className="h-16 border-b border-border" />}>
-        <SiteHeader isLoggedIn={!!user} temPainelAdmin={temPainelAdmin} userNome={userNome} avatarUrl={avatarUrl} />
+        <SiteHeader
+          isLoggedIn={!!user}
+          temPainelAdmin={temPainelAdmin}
+          userNome={userNome}
+          avatarUrl={avatarUrl}
+        />
       </Suspense>
 
-      <div className="relative mx-auto max-w-7xl px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
+      <div className="relative mx-auto max-w-7xl px-4 py-6 sm:px-6 sm:py-8 lg:px-8 space-y-8">
         <div className="pointer-events-none absolute left-1/4 top-0 -z-10 h-72 w-72 rounded-full bg-accent-purple/10 blur-3xl" />
         <div className="pointer-events-none absolute right-1/4 top-40 -z-10 h-64 w-64 rounded-full bg-accent-pink/5 blur-3xl" />
 
@@ -61,14 +84,19 @@ export default async function HomePage() {
           </div>
         )}
 
+        {/* Carrossel de Banners Automático */}
+        {eventosBanners.length > 0 && (
+          <BannerCarrossel eventos={eventosBanners} />
+        )}
+
         {!eventos || eventos.length === 0 ? (
           <div className="clubber-card flex min-h-[400px] flex-col items-center justify-center rounded-2xl border-dashed text-center">
             <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-accent-purple/10 text-accent-purple">
               <Ticket size={26} />
             </div>
-            <p className="text-lg font-semibold text-foreground">Ainda não há eventos criados.</p>
+            <p className="text-lg font-semibold text-foreground">Ainda não há eventos criados ou disponíveis.</p>
             <p className="mt-2 max-w-md text-sm text-muted">
-              Em breve você encontrará aqui as melhores festas, eventos universitários, pubs e experiências da sua cidade.
+              Em breve, você encontrará aqui os melhores eventos acadêmicos, universitários e experiências da sua região.
             </p>
           </div>
         ) : (

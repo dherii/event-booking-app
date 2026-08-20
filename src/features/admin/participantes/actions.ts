@@ -1,6 +1,6 @@
-// src/features/admin/participantes/actions.ts
-'use server'
+'use server';
 
+import { revalidatePath } from 'next/cache';
 import { getSupabaseAdmin } from '@/src/config/supabase';
 import { createSupabaseServerClient } from '@/src/config/supabase-server';
 import type { Inscrito, StatusPagamento } from './types';
@@ -14,9 +14,9 @@ const STATUS_MAP: Record<string, StatusPagamento> = {
 };
 
 export type ResultadoCheckin =
-  | { tipo: 'sucesso';  checkinAt: string }
+  | { tipo: 'sucesso'; checkinAt: string }
   | { tipo: 'ja-feito'; checkinAt: string | null }
-  | { tipo: 'erro';     mensagem: string };
+  | { tipo: 'erro'; mensagem: string };
 
 export async function realizarCheckin(inscricaoId: string): Promise<ResultadoCheckin> {
   const supabaseAuth = await createSupabaseServerClient();
@@ -88,10 +88,34 @@ export async function realizarCheckin(inscricaoId: string): Promise<ResultadoChe
       .insert({ inscricao_id: inscricaoId, utilizado: true, data_checkin: agora });
   }
 
+  revalidatePath('/admin/participantes');
   return { tipo: 'sucesso', checkinAt: agora };
 }
 
-// ─── Helper reutilizável: confirma que o usuário logado pode mexer nessa inscrição ──
+export async function alternarFrequencia(inscricaoId: string, diaNumero: number, presenteAtual: boolean) {
+  const supabaseAuth = await createSupabaseServerClient();
+  const { data: { user } } = await supabaseAuth.auth.getUser();
+  if (!user) throw new Error('Não autenticado.');
+
+  const supabase = getSupabaseAdmin();
+
+  const { error } = await supabase
+    .from('frequencias')
+    .upsert(
+      {
+        inscricao_id: inscricaoId,
+        dia_numero: diaNumero,
+        presente: !presenteAtual,
+        data_checkin: new Date().toISOString(),
+      },
+      { onConflict: 'inscricao_id,dia_numero' }
+    );
+
+  if (error) throw new Error(`Erro ao registrar frequência: ${error.message}`);
+
+  revalidatePath('/admin/participantes');
+  return { success: true };
+}
 
 async function verificarPermissaoInscricao(inscricaoId: string) {
   const supabaseAuth = await createSupabaseServerClient();
@@ -147,14 +171,14 @@ export async function aprovarCortesia(inscricaoId: string) {
     .eq('id', inscricaoId);
 
   if (error) throw new Error(error.message);
+
+  revalidatePath('/admin/participantes');
   return { success: true };
 }
 
 export async function cancelarInscricao(inscricaoId: string) {
   const { supabase, inscricao } = await verificarPermissaoInscricao(inscricaoId);
 
-  // Idempotente — se já está cancelada, não faz nada de novo (evita devolver
-  // a mesma vaga pro estoque duas vezes)
   if (['CANCELADO', 'ESTORNADO'].includes(inscricao.status_pagamento)) {
     return { success: true };
   }
@@ -166,15 +190,12 @@ export async function cancelarInscricao(inscricaoId: string) {
 
   if (errCancelar) throw new Error(errCancelar.message);
 
-  // Devolve a vaga pro estoque do lote de forma atômica — sem isso, uma
-  // vaga cancelada ficaria "presa" e nunca mais poderia ser vendida.
   const { error: errDevolucao } = await supabase.rpc('devolver_vaga', { p_lote_id: inscricao.lote_id });
   if (errDevolucao) {
     console.error('Erro ao devolver vaga ao estoque:', errDevolucao);
-    // não interrompe o fluxo por isso — a inscrição já foi cancelada,
-    // o estoque pode ser ajustado manualmente se necessário
   }
 
+  revalidatePath('/admin/participantes');
   return { success: true };
 }
 
@@ -206,7 +227,8 @@ export async function listarParticipantes(): Promise<Inscrito[]> {
         tipo,
         eventos!inner ( id, nome, estabelecimento_id )
       ),
-      ingressos_validacao ( utilizado, data_checkin )
+      ingressos_validacao ( utilizado, data_checkin ),
+      frequencias ( dia_numero, presente )
     `)
     .order('created_at', { ascending: false });
 
@@ -235,10 +257,15 @@ export async function listarParticipantes(): Promise<Inscrito[]> {
     const validacao = Array.isArray(i.ingressos_validacao) ? i.ingressos_validacao[0] : i.ingressos_validacao;
     const perfil = perfilPorId.get(i.usuario_id);
 
+    const freqLista = (i.frequencias ?? []).map((f: { dia_numero: number; presente: boolean }) => ({
+      diaNumero: f.dia_numero,
+      presente: f.presente,
+    }));
+
     return {
       id: i.id,
       nome: perfil?.nome ?? 'Comprador',
-      email: '', // pendente — vive em auth.users
+      email: '',
       cpf: perfil?.cpf ?? '—',
       telefone: perfil?.telefone ?? '—',
       evento: evento?.nome ?? 'Evento removido',
@@ -251,6 +278,8 @@ export async function listarParticipantes(): Promise<Inscrito[]> {
       checkinAt: validacao?.data_checkin ?? null,
       criadoEm: i.created_at,
       codigoIngresso: i.txid_pix ?? i.id.slice(0, 8).toUpperCase(),
+      frequencias: freqLista,
+      diasEvento: 0, 
     };
   });
 }
