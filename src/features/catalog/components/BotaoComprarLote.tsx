@@ -66,8 +66,10 @@ export default function BotaoComprarLote({
       }
 
       if (dados.checkoutUrl) {
+        // Redireciona o usuário para a página segura do Mercado Pago
         window.location.href = dados.checkoutUrl;
       } else if (dados.inscricaoId) {
+        // Fallback para ingressos gratuitos que não passam pelo gateway
         router.push(`/checkout/${dados.inscricaoId}?status=pago`);
       } else {
         alert('Erro: Link de pagamento não retornado.');
