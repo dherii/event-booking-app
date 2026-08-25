@@ -91,13 +91,13 @@ export default function BotaoComprarLote({
       onClick={handleComprar}
       disabled={desabilitado}
       className={`
-        inline-flex min-h-[44px] w-full items-center justify-center gap-2
-        rounded-xl px-4 py-2.5 text-xs font-extrabold uppercase tracking-wide
+        inline-flex min-h-[48px] w-full items-center justify-center gap-2.5
+        rounded-2xl px-5 py-3 text-xs font-black uppercase tracking-wider
         transition-all duration-200
 
         ${desabilitado
-            ? 'cursor-not-allowed bg-border text-muted-subtle'
-            : 'bg-primary text-primary-fg shadow-neon hover:bg-primary-hover hover:shadow-neon active:scale-[0.98]'
+            ? 'cursor-not-allowed bg-border text-muted-subtle shadow-none'
+            : 'bg-primary text-primary-fg shadow-neon hover:bg-primary-hover active:scale-[0.98]'
         }
 
         ${className}
@@ -105,7 +105,7 @@ export default function BotaoComprarLote({
     >
       {loading ? (
         <>
-          <Loader2 size={15} className="animate-spin" />
+          <Loader2 size={16} className="animate-spin" />
           Processando...
         </>
       ) : esgotado ? (
@@ -113,7 +113,7 @@ export default function BotaoComprarLote({
       ) : (
         <>
           {label}
-          <ArrowRight size={15} strokeWidth={2.5} />
+          <ArrowRight size={16} strokeWidth={2.5} />
         </>
       )}
     </button>

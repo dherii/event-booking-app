@@ -1,13 +1,13 @@
 @import "tailwindcss";
 
 /* ============================================================
-   IDENTIDADE VISUAL — Tema Acadêmico / Institucional (claro)
+   IDENTIDADE VISUAL â€” Tema AcadÃªmico / Institucional (claro)
    ============================================================ */
 
 @custom-variant dark (&:where(.dark, .dark *));
 
 :root {
-  /* Fundo e superfícies */
+  /* Fundo e superfÃ­cies */
   --background: #ffffff;
   --background-secondary: #f8fafc;
   --background-tertiary: #e5e7eb;
@@ -28,7 +28,7 @@
   --text-secondary: #4b5563;
   --text-tertiary: #9ca3af;
 
-  /* Cor primária — azul institucional */
+  /* Cor primÃ¡ria â€” azul institucional */
   --primary: #2563eb;
   --primary-hover: #1d4ed8;
   --primary-active: #1e40af;
@@ -68,11 +68,11 @@
   --border-purple: rgba(30, 58, 138, 0.3);
   --border-pink: rgba(96, 165, 250, 0.35);
 
-  /* Feedback — Erro */
+  /* Feedback â€” Erro */
   --error-bg: #fef2f2;
   --error-fg: #dc2626;
 
-  /* Feedback — Sucesso */
+  /* Feedback â€” Sucesso */
   --success-bg: #f0fdf4;
   --success-fg: #16a34a;
 
@@ -83,16 +83,15 @@
   --warning-bg: #fffbeb;
   --warning-fg: #d97706;
 
-  /* Sombras — suaves, sem "glow" neon */
-  --shadow-card: 0 1px 3px rgba(17, 24, 39, 0.08), 0 1px 2px rgba(17, 24, 39, 0.04);
-  --shadow-card-hover: 0 10px 20px rgba(17, 24, 39, 0.08), 0 3px 6px rgba(17, 24, 39, 0.05);
+  /* Sombras â€” suaves e elegantes */
+  --shadow-card: 0 4px 16px -4px rgba(17, 24, 39, 0.06), 0 2px 4px -2px rgba(17, 24, 39, 0.03);
+  --shadow-card-hover: 0 20px 40px -10px rgba(17, 24, 39, 0.1), 0 8px 16px -4px rgba(37, 99, 235, 0.06);
   --shadow-neon: 0 8px 20px rgba(37, 99, 235, 0.18);
   --shadow-purple: 0 8px 20px rgba(30, 58, 138, 0.15);
   --shadow-pink: 0 8px 20px rgba(96, 165, 250, 0.2);
 }
 
-/* Mesmos valores em .dark — não há toggle de tema implementado,
-   então mantemos os dois iguais por segurança */
+/* Mesmos valores em .dark */
 .dark {
   --background: #ffffff;
   --background-secondary: #f8fafc;
@@ -128,8 +127,8 @@
   --border-neon: rgba(37, 99, 235, 0.35);
   --border-purple: rgba(30, 58, 138, 0.3);
   --border-pink: rgba(96, 165, 250, 0.35);
-  --shadow-card: 0 1px 3px rgba(17, 24, 39, 0.08), 0 1px 2px rgba(17, 24, 39, 0.04);
-  --shadow-card-hover: 0 10px 20px rgba(17, 24, 39, 0.08), 0 3px 6px rgba(17, 24, 39, 0.05);
+  --shadow-card: 0 4px 16px -4px rgba(17, 24, 39, 0.06), 0 2px 4px -2px rgba(17, 24, 39, 0.03);
+  --shadow-card-hover: 0 20px 40px -10px rgba(17, 24, 39, 0.1), 0 8px 16px -4px rgba(37, 99, 235, 0.06);
   --shadow-neon: 0 8px 20px rgba(37, 99, 235, 0.18);
   --shadow-purple: 0 8px 20px rgba(30, 58, 138, 0.15);
   --shadow-pink: 0 8px 20px rgba(96, 165, 250, 0.2);
@@ -183,7 +182,6 @@
   --color-warning-bg: var(--warning-bg);
   --color-warning-fg: var(--warning-fg);
 
-  /* Sombras */
   --shadow-card: var(--shadow-card);
   --shadow-card-hover: var(--shadow-card-hover);
   --shadow-neon: var(--shadow-neon);
@@ -241,9 +239,38 @@ a {
 }
 
 @layer components {
+  /* ============================================================
+     GRAFISMO E BACKGROUNDS GEOMÃ‰TRICOS PREMIUM
+     ============================================================ */
+  .bg-grid-pattern {
+    background-size: 40px 40px;
+    background-image: 
+      linear-gradient(to right, rgba(37, 99, 235, 0.035) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(37, 99, 235, 0.035) 1px, transparent 1px);
+  }
+
+  .bg-dots-pattern {
+    background-image: radial-gradient(rgba(30, 58, 138, 0.07) 1.5px, transparent 1.5px);
+    background-size: 24px 24px;
+  }
+
+  .ambient-glow {
+    position: absolute;
+    width: 400px;
+    height: 400px;
+    background: linear-gradient(135deg, rgba(37, 99, 235, 0.07), rgba(96, 165, 250, 0.04));
+    filter: blur(90px);
+    border-radius: 50%;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* ============================================================
+     COMPONENTES DE INTERFACE REFINADOS
+     ============================================================ */
   .input-base {
     width: 100%;
-    padding: 0.7rem 1rem;
+    padding: 0.75rem 1rem;
     border-width: 1px;
     border-style: solid;
     border-color: var(--input-border);
@@ -269,16 +296,32 @@ a {
     border: 1px solid var(--border);
     border-radius: 1rem;
     box-shadow: var(--shadow-card);
-    transition: transform 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
+    transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.25s ease, box-shadow 0.25s ease;
   }
   .clubber-card:hover {
-    transform: translateY(-4px);
+    transform: translateY(-3px);
     border-color: var(--border-purple);
     box-shadow: var(--shadow-card-hover);
   }
 
+  /* Card Glassmorphism Premium com efeito translÃºcido sofisticado */
+  .glass-card-premium {
+    background: rgba(255, 255, 255, 0.88);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(229, 231, 235, 0.9);
+    box-shadow: 0 12px 32px -8px rgba(17, 24, 39, 0.06), 0 4px 12px -4px rgba(37, 99, 235, 0.03);
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  
+  .glass-card-premium:hover {
+    border-color: rgba(37, 99, 235, 0.3);
+    box-shadow: 0 20px 40px -10px rgba(17, 24, 39, 0.1), 0 8px 16px -4px rgba(37, 99, 235, 0.06);
+    transform: translateY(-3px);
+  }
+
   .glass {
-    background: rgba(255, 255, 255, 0.75);
+    background: rgba(255, 255, 255, 0.8);
     border: 1px solid rgba(17, 24, 39, 0.06);
     backdrop-filter: blur(18px);
     -webkit-backdrop-filter: blur(18px);
@@ -292,7 +335,7 @@ a {
     min-height: 44px;
     padding: 0.7rem 1.25rem;
     border: none;
-    border-radius: 0.7rem;
+    border-radius: 0.75rem;
     background-color: var(--primary);
     color: var(--primary-fg);
     font-weight: 700;
@@ -314,6 +357,20 @@ a {
     -webkit-background-clip: text;
     background-clip: text;
     color: transparent;
+  }
+
+  .accent-bar-top {
+    position: relative;
+  }
+  .accent-bar-top::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 1.5rem;
+    right: 1.5rem;
+    height: 3px;
+    background: var(--gradient-brand-horizontal);
+    border-radius: 0 0 4px 4px;
   }
 
   .badge-universitario {
@@ -414,16 +471,6 @@ a {
   }
   .clubber-card:hover .event-image {
     transform: scale(1.05);
-  }
-
-  .neon-purple {
-    box-shadow: 0 8px 20px rgba(30, 58, 138, 0.18);
-  }
-  .neon-cyan {
-    box-shadow: 0 8px 20px rgba(37, 99, 235, 0.18);
-  }
-  .neon-pink {
-    box-shadow: 0 8px 20px rgba(96, 165, 250, 0.2);
   }
 }
 

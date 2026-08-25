@@ -17,6 +17,7 @@ import {
   ExternalLink,
   User,
   MoreVertical,
+  Banknote
 } from 'lucide-react';
 
 // ─── Tipos ────────────────────────────────────────────────────────────────────
@@ -32,16 +33,19 @@ interface AdminShellProps {
   userNome: string;
   userEmail: string;
   estabelecimentoNome: string;
+  userRole: string;
+  headerAction?: React.ReactNode;
 }
 
 // ─── Constantes ───────────────────────────────────────────────────────────────
 
 const NAV_ITEMS: NavItem[] = [
-  { label: 'Dashboard',     href: '/admin',               icon: LayoutDashboard },
-  { label: 'Eventos',       href: '/admin/eventos',        icon: CalendarDays    },
-  { label: 'Participantes', href: '/admin/participantes',  icon: Users           },
-  { label: 'Financeiro',    href: '/admin/financeiro',     icon: Wallet          },
-  { label: 'Configurações', href: '/admin/configuracoes',  icon: Settings        },
+  { label: 'Dashboard', href: '/admin', icon: LayoutDashboard },
+  { label: 'Eventos', href: '/admin/eventos', icon: CalendarDays },
+  { label: 'Participantes', href: '/admin/participantes', icon: Users },
+  { label: 'Financeiro', href: '/admin/financeiro', icon: Wallet },
+  { label: 'Repasses', href: '/admin/repasses', icon: Banknote },
+  { label: 'Configurações', href: '/admin/configuracoes', icon: Settings },
 ];
 
 function iniciais(nome: string) {
@@ -87,19 +91,28 @@ function Sidebar({
   userNome,
   userEmail,
   estabelecimentoNome,
+  userRole,
 }: {
   pathname: string;
   onClose?: () => void;
   userNome: string;
   userEmail: string;
   estabelecimentoNome: string;
+  userRole: string;
 }) {
   const [menuUserAberto, setMenuUserAberto] = useState(false);
   const router = useRouter();
 
-  async function handleLogout() {
-    // Insira sua chamada de Logout aqui se usar Supabase ou NextAuth ex: await supabase.auth.signOut()
-    router.push('/login');
+ async function handleLogout() {
+    try {
+      const res = await fetch('/auth/logout', { method: 'POST' });
+      // Redireciona para a vitrine de ingressos (raiz /) após sair
+      router.push('/');
+      router.refresh();
+    } catch (error) {
+      console.error('Erro ao sair:', error);
+      router.push('/');
+    }
   }
 
   return (
@@ -127,7 +140,10 @@ function Sidebar({
       </div>
 
       <nav className="flex flex-col gap-1 flex-1">
-        {NAV_ITEMS.map((item) => (
+        {NAV_ITEMS.filter((item) => {
+          if (item.href === '/admin/repasses' && userRole !== 'super_admin') return false;
+          return true;
+        }).map((item) => (
           <NavLink
             key={item.href}
             item={item}
@@ -204,10 +220,12 @@ function Header({
   onMenuClick,
   pathname,
   userNome,
+  headerAction,
 }: {
   onMenuClick: () => void;
   pathname: string;
   userNome: string;
+  headerAction?: React.ReactNode;
 }) {
   const current = NAV_ITEMS.find((i) => i.href === pathname);
 
@@ -233,27 +251,34 @@ function Header({
         </div>
       </div>
 
-      {/* Lado Direito: Ações e Perfil Rápido */}
       <div className="flex items-center gap-3">
-        {/* Notificações */}
-        <button
-          className="relative p-2 rounded-xl text-muted-foreground hover:text-foreground hover:bg-accent transition-colors border border-border/40"
-          aria-label="Notificações"
-        >
-          <Bell size={18} />
-          <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-primary rounded-full ring-2 ring-card" />
-        </button>
 
-        <div className="h-5 w-px bg-border mx-1 hidden sm:block" />
+  {headerAction}
 
-        <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-full bg-primary/20 text-primary flex items-center justify-center text-xs font-bold ring-2 ring-primary/10">
-            {iniciais(userNome)}
-          </div>
-          <span className="text-xs font-semibold text-foreground hidden md:inline-block">
-            {userNome.split(' ')[0]}
-          </span>
-        </div>
+  {/* Notificações */}
+  <button
+    className="relative p-2 rounded-xl text-muted-foreground hover:text-foreground hover:bg-accent transition-colors border border-border/40"
+    aria-label="Notificações"
+  >
+    <Bell size={18} />
+
+    <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-primary rounded-full ring-2 ring-card" />
+  </button>
+
+  <div className="h-5 w-px bg-border mx-1 hidden sm:block" />
+
+  <div className="flex items-center gap-2.5">
+    <div className="w-8 h-8 rounded-full bg-primary/20 text-primary flex items-center justify-center text-xs font-bold ring-2 ring-primary/10">
+      {iniciais(userNome)}
+    </div>
+
+    <span className="text-xs font-semibold text-foreground hidden md:inline-block">
+      {userNome.split(" ")[0]}
+    </span>
+  </div>
+
+
+        
       </div>
     </header>
   );
@@ -261,7 +286,14 @@ function Header({
 
 // ─── Shell Principal ────────────────────────────────────────────────────────
 
-export function AdminShell({ children, userNome, userEmail, estabelecimentoNome }: AdminShellProps) {
+export function AdminShell({
+  children,
+  userNome,
+  userEmail,
+  estabelecimentoNome,
+  userRole,
+  headerAction,
+}: AdminShellProps) {
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
 
@@ -273,6 +305,7 @@ export function AdminShell({ children, userNome, userEmail, estabelecimentoNome 
           userNome={userNome}
           userEmail={userEmail}
           estabelecimentoNome={estabelecimentoNome}
+          userRole={userRole}
         />
       </div>
 
@@ -283,20 +316,26 @@ export function AdminShell({ children, userNome, userEmail, estabelecimentoNome 
             onClick={() => setMobileOpen(false)}
             aria-hidden
           />
-          <div className="fixed inset-y-0 left-0 z-40 flex lg:hidden">
+          <div className="fixed inset-y-0 left-0 z-40 flex w-60 lg:hidden">
             <Sidebar
               pathname={pathname}
               onClose={() => setMobileOpen(false)}
               userNome={userNome}
               userEmail={userEmail}
               estabelecimentoNome={estabelecimentoNome}
+              userRole={userRole}
             />
           </div>
         </>
       )}
 
       <div className="flex flex-col flex-1 min-w-0">
-        <Header onMenuClick={() => setMobileOpen(true)} pathname={pathname} userNome={userNome} />
+        <Header
+  onMenuClick={() => setMobileOpen(true)}
+  pathname={pathname}
+  userNome={userNome}
+  headerAction={headerAction}
+/>
 
         <main className="flex-1 overflow-y-auto">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6">

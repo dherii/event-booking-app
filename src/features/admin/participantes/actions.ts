@@ -1,6 +1,8 @@
+// src/features/admin/participantes/actions.ts
 'use server';
 
 import { revalidatePath } from 'next/cache';
+import { cookies } from 'next/headers';
 import { getSupabaseAdmin } from '@/src/config/supabase';
 import { createSupabaseServerClient } from '@/src/config/supabase-server';
 import type { Inscrito, StatusPagamento } from './types';
@@ -18,19 +20,64 @@ export type ResultadoCheckin =
   | { tipo: 'ja-feito'; checkinAt: string | null }
   | { tipo: 'erro'; mensagem: string };
 
-export async function realizarCheckin(inscricaoId: string): Promise<ResultadoCheckin> {
+// ─── Helper interno para pegar o estabelecimento ativo ou global ───
+async function getEstabelecimentoAtivo() {
   const supabaseAuth = await createSupabaseServerClient();
   const { data: { user } } = await supabaseAuth.auth.getUser();
-  if (!user) return { tipo: 'erro', mensagem: 'Você precisa estar logado.' };
 
-  const { data: profile } = await supabaseAuth
+  if (!user) {
+    throw new Error('Não autenticado.');
+  }
+
+  const { data: profile, error: profileError } = await supabaseAuth
     .from('profiles')
     .select('estabelecimento_id, role')
     .eq('id', user.id)
     .single();
 
+  if (profileError || !profile) {
+    throw new Error('Não foi possível carregar seu perfil.');
+  }
+
+  const isSuperAdmin = profile.role === 'super_admin';
+  const cookieStore = await cookies();
+  const cookieEstabelecimento = cookieStore.get('admin_estabelecimento_id')?.value;
+
+  const isGlobal = isSuperAdmin && cookieEstabelecimento === 'Todos';
+
+  const estabelecimentoId = isSuperAdmin && cookieEstabelecimento && cookieEstabelecimento !== 'Todos'
+    ? cookieEstabelecimento
+    : profile.estabelecimento_id;
+
+  return {
+    userId: user.id,
+    role: profile.role,
+    isSuperAdmin,
+    isGlobal,
+    estabelecimentoId,
+  };
+}
+
+export async function realizarCheckin(inscricaoId: string): Promise<ResultadoCheckin> {
+  let role: string;
+  let estabelecimentoId: string | null;
+  let isGlobal: boolean;
+
+  try {
+    const info = await getEstabelecimentoAtivo();
+    role = info.role;
+    estabelecimentoId = info.estabelecimentoId;
+    isGlobal = info.isGlobal;
+  } catch {
+    return { tipo: 'erro', mensagem: 'Você precisa estar logado.' };
+  }
+
+  if (isGlobal) {
+    return { tipo: 'erro', mensagem: 'Selecione um estabelecimento específico para realizar o check-in.' };
+  }
+
   const papeisPermitidos = ['super_admin', 'dono_estabelecimento', 'staff_checkin'];
-  if (!profile || !papeisPermitidos.includes(profile.role)) {
+  if (!papeisPermitidos.includes(role)) {
     return { tipo: 'erro', mensagem: 'Você não tem permissão para fazer check-in.' };
   }
 
@@ -53,8 +100,10 @@ export async function realizarCheckin(inscricaoId: string): Promise<ResultadoChe
   const lote = Array.isArray(inscricao.lotes) ? inscricao.lotes[0] : inscricao.lotes;
   const evento = Array.isArray(lote?.eventos) ? lote?.eventos[0] : lote?.eventos;
 
-  if (profile.role !== 'super_admin' && evento?.estabelecimento_id !== profile.estabelecimento_id) {
+  if (role !== 'super_admin' && evento?.estabelecimento_id !== estabelecimentoId) {
     return { tipo: 'erro', mensagem: 'Este ingresso não pertence ao seu estabelecimento.' };
+  } else if (role === 'super_admin' && estabelecimentoId && evento?.estabelecimento_id !== estabelecimentoId) {
+    return { tipo: 'erro', mensagem: 'Este ingresso não pertence ao estabelecimento selecionado.' };
   }
 
   if (['CANCELADO', 'ESTORNADO'].includes(inscricao.status_pagamento)) {
@@ -118,18 +167,14 @@ export async function alternarFrequencia(inscricaoId: string, diaNumero: number,
 }
 
 async function verificarPermissaoInscricao(inscricaoId: string) {
-  const supabaseAuth = await createSupabaseServerClient();
-  const { data: { user } } = await supabaseAuth.auth.getUser();
-  if (!user) throw new Error('Você precisa estar logado.');
+  const { role, estabelecimentoId, isGlobal } = await getEstabelecimentoAtivo();
 
-  const { data: profile } = await supabaseAuth
-    .from('profiles')
-    .select('estabelecimento_id, role')
-    .eq('id', user.id)
-    .single();
+  if (isGlobal) {
+    throw new Error('Ação não permitida no modo global. Selecione um estabelecimento específico.');
+  }
 
   const papeisPermitidos = ['super_admin', 'dono_estabelecimento', 'staff_checkin'];
-  if (!profile || !papeisPermitidos.includes(profile.role)) {
+  if (!papeisPermitidos.includes(role)) {
     throw new Error('Você não tem permissão para esta ação.');
   }
 
@@ -151,8 +196,10 @@ async function verificarPermissaoInscricao(inscricaoId: string) {
   const lote = Array.isArray(inscricao.lotes) ? inscricao.lotes[0] : inscricao.lotes;
   const evento = Array.isArray(lote?.eventos) ? lote?.eventos[0] : lote?.eventos;
 
-  if (profile.role !== 'super_admin' && evento?.estabelecimento_id !== profile.estabelecimento_id) {
+  if (role !== 'super_admin' && evento?.estabelecimento_id !== estabelecimentoId) {
     throw new Error('Esta inscrição não pertence ao seu estabelecimento.');
+  } else if (role === 'super_admin' && estabelecimentoId && evento?.estabelecimento_id !== estabelecimentoId) {
+    throw new Error('Esta inscrição não pertence ao estabelecimento selecionado.');
   }
 
   return { supabase, inscricao };
@@ -200,15 +247,7 @@ export async function cancelarInscricao(inscricaoId: string) {
 }
 
 export async function listarParticipantes(): Promise<Inscrito[]> {
-  const supabaseAuth = await createSupabaseServerClient();
-  const { data: { user } } = await supabaseAuth.auth.getUser();
-  if (!user) throw new Error('Não autenticado.');
-
-  const { data: profile } = await supabaseAuth
-    .from('profiles')
-    .select('estabelecimento_id, role')
-    .eq('id', user.id)
-    .single();
+  const { estabelecimentoId, isGlobal } = await getEstabelecimentoAtivo();
 
   const supabase = getSupabaseAdmin();
 
@@ -225,15 +264,14 @@ export async function listarParticipantes(): Promise<Inscrito[]> {
         nome,
         preco,
         tipo,
-        eventos!inner ( id, nome, estabelecimento_id )
+        eventos!inner ( id, nome, estabelecimento_id, dias )
       ),
       ingressos_validacao ( utilizado, data_checkin ),
       frequencias ( dia_numero, presente )
-    `)
-    .order('created_at', { ascending: false });
+    `);
 
-  if (profile?.role !== 'super_admin') {
-    query = query.eq('lotes.eventos.estabelecimento_id', profile?.estabelecimento_id);
+  if (!isGlobal && estabelecimentoId) {
+    query = query.eq('lotes.eventos.estabelecimento_id', estabelecimentoId);
   }
 
   const { data: inscricoes, error } = await query;
@@ -251,7 +289,7 @@ export async function listarParticipantes(): Promise<Inscrito[]> {
 
   const perfilPorId = new Map((perfis ?? []).map((p) => [p.id, p]));
 
-  return inscricoes.map((i): Inscrito => {
+  const inscritosMapeados = inscricoes.map((i): Inscrito => {
     const lote = Array.isArray(i.lotes) ? i.lotes[0] : i.lotes;
     const evento = Array.isArray(lote?.eventos) ? lote?.eventos[0] : lote?.eventos;
     const validacao = Array.isArray(i.ingressos_validacao) ? i.ingressos_validacao[0] : i.ingressos_validacao;
@@ -279,7 +317,10 @@ export async function listarParticipantes(): Promise<Inscrito[]> {
       criadoEm: i.created_at,
       codigoIngresso: i.txid_pix ?? i.id.slice(0, 8).toUpperCase(),
       frequencias: freqLista,
-      diasEvento: 0, 
+      diasEvento: Number(evento?.dias ?? 1), 
     };
   });
+
+  // Retorna ordenado alfabéticamente pelo nome do participante (A-Z)
+  return inscritosMapeados.sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR'));
 }
