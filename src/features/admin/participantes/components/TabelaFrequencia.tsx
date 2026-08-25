@@ -1,8 +1,8 @@
 // src/features/admin/participantes/components/TabelaFrequencia.tsx
 'use client';
 
-import { useState, useTransition } from 'react';
-import { Calendar, Check, X, SlidersHorizontal, Loader2 } from 'lucide-react';
+import { useState, useTransition, useMemo } from 'react';
+import { Search, Loader2 } from 'lucide-react';
 import type { Inscrito } from '../types';
 import { alternarFrequencia } from '../actions';
 
@@ -10,176 +10,162 @@ interface Props {
   inscritos: Inscrito[];
 }
 
-export function TabelaFrequencia({ inscritos }: Props) {
+export function TabelaFrequencia({ inscritos: inscritosIniciais }: Props) {
   const [isPending, startTransition] = useTransition();
-  const [participanteSelecionado, setParticipanteSelecionado] = useState<Inscrito | null>(null);
+  const [busca, setBusca] = useState('');
+  
+  // Estado local para otimização otimista (UI atualiza antes do servidor responder)
+  const [lista, setLista] = useState<Inscrito[]>(inscritosIniciais);
+
+  // Filtra por nome ou CPF
+  const filtrados = useMemo(() => {
+    const q = busca.toLowerCase().trim();
+    if (!q) return lista;
+    return lista.filter((i) => 
+      i.nome.toLowerCase().includes(q) || 
+      i.cpf.includes(q)
+    );
+  }, [lista, busca]);
 
   function handleCheckin(inscricaoId: string, diaNumero: number, presenteAtual: boolean) {
+    // Atualização Otimista na UI
+    setLista((prev) => prev.map((inscrito) => {
+      if (inscrito.id !== inscricaoId) return inscrito;
+      
+      const freqAtuais = inscrito.frequencias ?? [];
+      const jaExiste = freqAtuais.find((f) => f.diaNumero === diaNumero);
+      
+      const novasFreq = jaExiste 
+        ? freqAtuais.map((f) => f.diaNumero === diaNumero ? { ...f, presente: !presenteAtual } : f)
+        : [...freqAtuais, { diaNumero, presente: !presenteAtual }];
+
+      return { ...inscrito, frequencias: novasFreq };
+    }));
+
+    // Chamada ao servidor
     startTransition(async () => {
       try {
         await alternarFrequencia(inscricaoId, diaNumero, presenteAtual);
-        
-        // Atualiza também o estado local do modal aberto para refletir na hora
-        if (participanteSelecionado && participanteSelecionado.id === inscricaoId) {
-          const freqAtuais = participanteSelecionado.frequencias ?? [];
-          const jaExiste = freqAtuais.find((f) => f.diaNumero === diaNumero);
-          
-          let novasFreq;
-          if (jaExiste) {
-            novasFreq = freqAtuais.map((f) => 
-              f.diaNumero === diaNumero ? { ...f, presente: !presenteAtual } : f
-            );
-          } else {
-            novasFreq = [...freqAtuais, { diaNumero, presente: !presenteAtual }];
-          }
-
-          setParticipanteSelecionado({
-            ...participanteSelecionado,
-            frequencias: novasFreq,
-          });
-        }
       } catch (err) {
-        alert('Erro ao marcar presença.');
+        alert('Erro ao registrar presença. Recarregue a página.');
       }
     });
   }
 
+  // Componente interno para renderizar os dias em linha
+  const DiasFrequencia = ({ inscrito }: { inscrito: Inscrito }) => {
+    const totalDias = inscrito.diasEvento ?? 1;
+    const mapaFreq = new Map(inscrito.frequencias?.map((f) => [f.diaNumero, f.presente]));
+
+    return (
+      <div className="flex flex-wrap gap-3">
+        {Array.from({ length: totalDias }, (_, i) => i + 1).map((dia) => {
+          const presente = mapaFreq.get(dia) ?? false;
+          return (
+            <label 
+              key={dia} 
+              className={`flex items-center gap-2 px-3 py-2 rounded-lg border transition-all cursor-pointer ${
+                presente 
+                  ? 'bg-emerald-50 border-emerald-200 text-emerald-800' 
+                  : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'
+              }`}
+            >
+              <input
+                type="checkbox"
+                disabled={isPending || inscrito.status !== 'pago'}
+                checked={presente}
+                onChange={() => handleCheckin(inscrito.id, dia, presente)}
+                className="w-4 h-4 text-emerald-600 rounded border-slate-300 focus:ring-emerald-500 cursor-pointer disabled:opacity-50"
+              />
+              <span className="text-xs font-bold whitespace-nowrap">Dia {dia}</span>
+            </label>
+          );
+        })}
+      </div>
+    );
+  };
+
   return (
     <div className="space-y-4">
+      {/* Barra de Busca */}
+      <div className="relative max-w-md">
+        <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+        <input
+          type="text"
+          className="w-full bg-white border border-slate-200 rounded-xl pl-10 pr-4 py-2.5 text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all shadow-sm"
+          placeholder="Buscar participante por nome ou CPF..."
+          value={busca}
+          onChange={(e) => setBusca(e.target.value)}
+        />
+        {isPending && <Loader2 size={16} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-blue-500 animate-spin" />}
+      </div>
+
+      {/* Visualização Híbrida: Tabela para Desktop / Cards para Mobile */}
       <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
-        <div className="overflow-x-auto">
+        
+        {/* Layout Desktop */}
+        <div className="hidden md:block overflow-x-auto">
           <table className="w-full text-sm text-left">
             <thead className="bg-slate-50 text-xs uppercase text-slate-500 font-semibold border-b border-slate-200">
               <tr>
                 <th className="px-6 py-4">Participante</th>
-                <th className="px-6 py-4">Evento</th>
-                <th className="px-6 py-4 text-center">Progresso Geral</th>
-                <th className="px-6 py-4 text-right">Ações</th>
+                <th className="px-6 py-4">Status</th>
+                <th className="px-6 py-4">Frequência</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {inscritos.map((p) => {
-                const totalDiasInscrito = p.diasEvento ?? 1;
-                const mapaFreq = new Map(p.frequencias?.map((f) => [f.diaNumero, f.presente]));
-                const totalPresencas = Array.from(mapaFreq.values()).filter(Boolean).length;
-                const concluiuTodos = totalPresencas === totalDiasInscrito;
-
-                return (
-                  <tr key={p.id} className="hover:bg-slate-50/80 transition-colors">
-                    <td className="px-6 py-4">
-                      <p className="font-semibold text-slate-900">{p.nome}</p>
-                      <p className="text-xs text-slate-500">{p.email || p.codigoIngresso}</p>
-                    </td>
-                    <td className="px-6 py-4 text-xs text-slate-600">
-                      <p className="font-medium text-slate-800">{p.evento}</p>
-                      <span className="text-[11px] text-slate-400">
-                        ({totalDiasInscrito} {totalDiasInscrito === 1 ? 'dia' : 'dias'})
-                      </span>
-                    </td>
-
-                    <td className="px-6 py-4 text-center">
-                      <span
-                        className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold ${
-                          concluiuTodos
-                            ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                            : 'bg-slate-100 text-slate-600 font-medium'
-                        }`}
-                      >
-                        {totalPresencas}/{totalDiasInscrito} {totalDiasInscrito === 1 ? 'dia' : 'dias'}
-                      </span>
-                    </td>
-
-                    <td className="px-6 py-4 text-right">
-                      <button
-                        type="button"
-                        onClick={() => setParticipanteSelecionado(p)}
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-200 bg-white text-slate-700 text-xs font-semibold hover:bg-slate-50 transition-all cursor-pointer shadow-xs"
-                      >
-                        <SlidersHorizontal size={14} className="text-slate-500" />
-                        Gerenciar Dias
-                      </button>
-                    </td>
-                  </tr>
-                );
-              })}
+              {filtrados.map((p) => (
+                <tr key={p.id} className={`hover:bg-slate-50/80 transition-colors ${p.status !== 'pago' ? 'opacity-60' : ''}`}>
+                  <td className="px-6 py-4">
+                    <p className="font-semibold text-slate-900">{p.nome}</p>
+                    <p className="text-xs text-slate-500">{p.cpf}</p>
+                  </td>
+                  <td className="px-6 py-4">
+                    <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${
+                      p.status === 'pago' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'
+                    }`}>
+                      {p.status === 'pago' ? 'Confirmado' : 'Pendente'}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4">
+                    <DiasFrequencia inscrito={p} />
+                  </td>
+                </tr>
+              ))}
             </tbody>
           </table>
         </div>
-      </div>
 
-      {/* Modal de Gerenciamento de Frequência por Dias */}
-      {participanteSelecionado && (
-        <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-200">
-          <div className="bg-white border border-slate-200 rounded-2xl max-w-md w-full p-6 space-y-5 shadow-xl animate-in zoom-in-95 duration-200">
-            <div className="flex items-start justify-between">
-              <div>
-                <h3 className="text-base font-bold text-slate-900">Frequência por Dias</h3>
-                <p className="text-xs text-slate-500 mt-0.5">
-                  {participanteSelecionado.nome} · {participanteSelecionado.evento}
-                </p>
+        {/* Layout Mobile */}
+        <div className="md:hidden flex flex-col divide-y divide-slate-100">
+          {filtrados.map((p) => (
+            <div key={p.id} className={`p-4 space-y-3 ${p.status !== 'pago' ? 'opacity-60' : ''}`}>
+              <div className="flex justify-between items-start">
+                <div>
+                  <p className="font-bold text-slate-900 text-sm">{p.nome}</p>
+                  <p className="text-xs text-slate-500">{p.cpf}</p>
+                </div>
+                <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${
+                  p.status === 'pago' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'
+                }`}>
+                  {p.status === 'pago' ? 'Confirmado' : 'Pendente'}
+                </span>
               </div>
-              <button
-                onClick={() => setParticipanteSelecionado(null)}
-                className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-500 transition-all cursor-pointer"
-              >
-                <X size={16} />
-              </button>
+              
+              <div className="pt-2 border-t border-slate-50">
+                <p className="text-[10px] uppercase text-slate-400 font-bold mb-2 tracking-wider">Marcar Presença</p>
+                <DiasFrequencia inscrito={p} />
+              </div>
             </div>
-
-            <div className="space-y-2.5 max-h-[60vh] overflow-y-auto pr-1">
-              {Array.from({ length: participanteSelecionado.diasEvento ?? 1 }, (_, i) => i + 1).map((dia) => {
-                const mapaFreq = new Map(participanteSelecionado.frequencias?.map((f) => [f.diaNumero, f.presente]));
-                const presente = mapaFreq.get(dia) ?? false;
-
-                return (
-                  <label
-                    key={dia}
-                    className={`flex items-center justify-between p-3.5 rounded-xl border transition-all cursor-pointer ${
-                      presente
-                        ? 'bg-emerald-50/60 border-emerald-200 text-emerald-900'
-                        : 'bg-slate-50/60 border-slate-200 text-slate-700 hover:bg-slate-100/80'
-                    }`}
-                  >
-                    <div className="flex items-center gap-3">
-                      <div
-                        className={`w-8 h-8 rounded-lg flex items-center justify-center ${
-                          presente ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-200 text-slate-600'
-                        }`}
-                      >
-                        <Calendar size={16} />
-                      </div>
-                      <div>
-                        <p className="text-xs font-bold uppercase tracking-wider">Dia {dia}</p>
-                        <p className="text-[11px] text-slate-500">
-                          {presente ? 'Presença confirmada' : 'Ausente'}
-                        </p>
-                      </div>
-                    </div>
-
-                    <input
-                      type="checkbox"
-                      disabled={isPending}
-                      checked={presente}
-                      onChange={() => handleCheckin(participanteSelecionado.id, dia, presente)}
-                      className="w-5 h-5 text-emerald-600 rounded border-slate-300 focus:ring-emerald-500/20 focus:ring-2 cursor-pointer disabled:opacity-50"
-                    />
-                  </label>
-                );
-              })}
-            </div>
-
-            <div className="pt-2">
-              <button
-                type="button"
-                onClick={() => setParticipanteSelecionado(null)}
-                className="w-full py-2.5 rounded-xl bg-slate-900 text-white text-xs font-semibold hover:bg-slate-800 transition-all cursor-pointer shadow-xs"
-              >
-                Concluir
-              </button>
-            </div>
-          </div>
+          ))}
         </div>
-      )}
+
+        {filtrados.length === 0 && (
+          <div className="p-8 text-center text-sm text-slate-500">
+            Nenhum participante encontrado com os filtros atuais.
+          </div>
+        )}
+      </div>
     </div>
   );
 }
