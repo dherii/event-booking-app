@@ -35,11 +35,7 @@ export default function BotaoComprarLote({
 
       if (!session) {
         const redirectTo = `/eventos/${eventoId}`;
-
-        router.push(
-          `/auth/login?redirect=${encodeURIComponent(redirectTo)}`
-        );
-
+        router.push(`/auth/login?redirect=${encodeURIComponent(redirectTo)}`);
         return;
       }
 
@@ -57,86 +53,48 @@ export default function BotaoComprarLote({
         error?: string;
         requiresLogin?: boolean;
         inscricaoId?: string;
+        checkoutUrl?: string; 
       } = await response.json();
 
       if (!response.ok) {
         if (dados.requiresLogin) {
-          router.push(
-            `/auth/login?redirect=${encodeURIComponent(
-              `/eventos/${eventoId}`
-            )}`
-          );
-
+          router.push(`/auth/login?redirect=${encodeURIComponent(`/eventos/${eventoId}`)}`);
           return;
         }
-
-        alert(
-          dados.error ||
-            'Erro ao realizar inscrição'
-        );
-
+        alert(dados.error || 'Erro ao realizar inscrição');
         return;
       }
 
-      if (dados.inscricaoId) {
-        router.push(
-          `/checkout/${dados.inscricaoId}`
-        );
+      if (dados.checkoutUrl) {
+        window.location.href = dados.checkoutUrl;
+      } else if (dados.inscricaoId) {
+        router.push(`/checkout/${dados.inscricaoId}?status=pago`);
       } else {
-        alert(
-          'Inscrição gerada, mas o identificador não foi retornado.'
-        );
+        alert('Erro: Link de pagamento não retornado.');
       }
+
     } catch (err) {
       console.error(err);
-
-      alert(
-        'Erro na conexão com o servidor.'
-      );
+      alert('Erro na conexão com o servidor.');
     } finally {
       setLoading(false);
     }
   }
 
-  const desabilitado =
-    esgotado || loading;
+  const desabilitado = esgotado || loading;
 
   return (
     <button
       onClick={handleComprar}
       disabled={desabilitado}
       className={`
-        inline-flex
-        min-h-[44px]
-        w-full
-        items-center
-        justify-center
-        gap-2
-        rounded-xl
-        px-4
-        py-2.5
-        text-xs
-        font-extrabold
-        uppercase
-        tracking-wide
-        transition-all
-        duration-200
+        inline-flex min-h-[48px] w-full items-center justify-center gap-2.5
+        rounded-2xl px-5 py-3 text-xs font-black uppercase tracking-wider
+        transition-all duration-200
 
-        ${
-          desabilitado
-            ? `
-              cursor-not-allowed
-              bg-border
-              text-muted-subtle
-            `
-            : `
-              bg-primary
-              text-primary-fg
-              shadow-neon
-              hover:bg-primary-hover
-              hover:shadow-neon
-              active:scale-[0.98]
-            `
+        ${desabilitado
+            ? 'cursor-not-allowed bg-border text-muted-subtle shadow-none'
+            : 'bg-primary text-primary-fg shadow-neon hover:bg-primary-hover active:scale-[0.98]'
         }
 
         ${className}
@@ -144,11 +102,7 @@ export default function BotaoComprarLote({
     >
       {loading ? (
         <>
-          <Loader2
-            size={15}
-            className="animate-spin"
-          />
-
+          <Loader2 size={16} className="animate-spin" />
           Processando...
         </>
       ) : esgotado ? (
@@ -156,11 +110,7 @@ export default function BotaoComprarLote({
       ) : (
         <>
           {label}
-
-          <ArrowRight
-            size={15}
-            strokeWidth={2.5}
-          />
+          <ArrowRight size={16} strokeWidth={2.5} />
         </>
       )}
     </button>

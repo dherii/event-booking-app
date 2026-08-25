@@ -36,10 +36,6 @@ interface CardEventoProps {
   favoritadoInicial?: boolean;
 }
 
-/* ============================================================
-   CORES DAS CATEGORIAS
-   ============================================================ */
-
 const CORES_CATEGORIA: Record<string, string> = {
   'Universitário': 'bg-accent-purple/90 text-white border-accent-purple/40',
   'Pub / Bar':     'bg-orange-500/90 text-white border-orange-400/40',
@@ -62,10 +58,6 @@ function corCategoria(categoria: string) {
   return PALETA_FALLBACK[hash % PALETA_FALLBACK.length];
 }
 
-/* ============================================================
-   DATA
-   ============================================================ */
-
 function formatarDataBadge(iso: string) {
   const d = new Date(iso);
   return {
@@ -74,10 +66,6 @@ function formatarDataBadge(iso: string) {
     hora: d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }).replace(':', 'H'),
   };
 }
-
-/* ============================================================
-   COMPONENTE
-   ============================================================ */
 
 export default function CardEvento({ evento, favoritadoInicial = false }: CardEventoProps) {
   const router = useRouter();
@@ -120,13 +108,13 @@ export default function CardEvento({ evento, favoritadoInicial = false }: CardEv
 
     setFavoritando(true);
     const anterior = favorito;
-    setFavorito(!anterior); // otimista
+    setFavorito(!anterior);
 
     try {
       const resultado = await toggleFavorito(evento.id);
       setFavorito(resultado.favoritado);
     } catch {
-      setFavorito(anterior); // reverte se der erro
+      setFavorito(anterior);
     } finally {
       setFavoritando(false);
     }
@@ -174,12 +162,8 @@ export default function CardEvento({ evento, favoritadoInicial = false }: CardEv
   }
 
   return (
-    <article className="group relative flex h-full flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-card transition-all duration-300 hover:-translate-y-1 hover:border-accent-purple/50 hover:shadow-purple">
+    <article className="group relative flex h-full flex-col overflow-hidden rounded-3xl border border-border/80 bg-card shadow-card transition-all duration-300 hover:-translate-y-1.5 hover:border-primary/40 hover:shadow-card-hover">
 
-      {/* ======================================================
-          IMAGEM — div clicável (não <button>, pra poder conter
-          o botão de favoritar sem aninhar button dentro de button)
-          ====================================================== */}
       <div
         onClick={irParaEvento}
         role="button"
@@ -187,90 +171,88 @@ export default function CardEvento({ evento, favoritadoInicial = false }: CardEv
         onKeyDown={(e) => {
           if (e.key === 'Enter' || e.key === ' ') irParaEvento();
         }}
-        className="relative aspect-[4/3] w-full cursor-pointer overflow-hidden"
+        className="relative aspect-[4/3] w-full cursor-pointer overflow-hidden bg-background-secondary"
       >
         {evento.banner_url ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
             src={evento.banner_url}
             alt={evento.nome}
-            className="event-image h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
+            className="event-image h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
           />
         ) : (
-          <div className="h-full w-full bg-gradient-to-br from-accent-purple/50 via-card to-accent-pink/40" />
+          <div className="h-full w-full bg-gradient-to-br from-accent-purple/30 via-card to-accent-pink/30" />
         )}
 
-        {/* Overlay */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/10 to-black/10" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/10 to-transparent" />
 
-        {/* Data */}
-        <div className="absolute left-3 top-3 min-w-[52px] rounded-xl border border-white/10 bg-black/65 px-2 py-2 text-center leading-none backdrop-blur-md">
-          <p className="text-[11px] font-black text-primary">{dia}</p>
-          <p className="mt-1 text-[9px] font-bold text-white">{mes}</p>
-          <p className="mt-1 text-[9px] font-medium text-white/70">{hora}</p>
+        {/* Data Badge */}
+        <div className="absolute left-3.5 top-3.5 min-w-[56px] rounded-2xl border border-white/15 bg-black/60 px-2.5 py-2 text-center leading-none backdrop-blur-md shadow-sm">
+          <p className="text-xs font-black text-primary">{dia}</p>
+          <p className="mt-1 text-[10px] font-extrabold text-white">{mes}</p>
+          <p className="mt-1 text-[9px] font-semibold text-white/70">{hora}</p>
         </div>
 
-        {/* Categoria */}
+        {/* Categoria Badge */}
         {evento.categoria && (
-          <span className={`absolute right-3 top-3 rounded-full border px-2.5 py-1 text-[9px] font-black uppercase tracking-wide backdrop-blur-sm ${corCategoria(evento.categoria)}`}>
+          <span className={`absolute right-3.5 top-3.5 rounded-full border px-3 py-1 text-[10px] font-extrabold uppercase tracking-wide backdrop-blur-md ${corCategoria(evento.categoria)} shadow-sm`}>
             {evento.categoria}
           </span>
         )}
 
         {/* Urgência */}
         {poucosIngressos && (
-          <span className="badge-urgency absolute bottom-3 left-3 px-2 py-1 text-[9px]">
+          <span className="badge-urgency absolute bottom-3.5 left-3.5 px-2.5 py-1 text-[10px]">
             Últimos ingressos
           </span>
         )}
 
-        {/* Favorito — único <button> real dentro da div */}
+        {/* Favorito */}
         <button
           type="button"
           aria-label="Favoritar evento"
           onClick={handleFavoritar}
           disabled={favoritando}
-          className="absolute bottom-3 right-3 flex h-9 w-9 items-center justify-center rounded-full border border-white/15 bg-black/50 text-white backdrop-blur-md transition-all hover:scale-110 hover:border-white/30 disabled:opacity-70"
+          className="absolute bottom-3.5 right-3.5 flex h-10 w-10 items-center justify-center rounded-full border border-white/20 bg-black/50 text-white backdrop-blur-md transition-all hover:scale-110 hover:border-white/40 disabled:opacity-70 shadow-sm"
         >
-          <Heart size={16} fill={favorito ? 'currentColor' : 'none'} className={favorito ? 'text-accent-pink' : ''} />
+          <Heart size={18} fill={favorito ? 'currentColor' : 'none'} className={favorito ? 'text-accent-pink' : ''} />
         </button>
       </div>
 
-      {/* ======================================================
-          CONTEÚDO
-          ====================================================== */}
-      <div className="flex flex-1 flex-col p-4">
+      <div className="flex flex-1 flex-col p-5">
         <button onClick={irParaEvento} className="text-left">
-          <h2 className="line-clamp-2 font-bold leading-tight text-foreground transition-colors group-hover:text-primary">
+          <h2 className="line-clamp-2 font-bold leading-snug text-foreground transition-colors group-hover:text-primary text-base">
             {evento.nome}
           </h2>
         </button>
 
         {(evento.local || estabelecimento?.nome) && (
-          <p className="mt-2 flex items-center gap-1.5 truncate text-xs text-muted">
-            <MapPin size={13} className="shrink-0 text-accent-pink" />
+          <p className="mt-2.5 flex items-center gap-2 truncate text-xs text-muted font-medium">
+            <MapPin size={14} className="shrink-0 text-primary" />
             <span className="truncate">{evento.local || estabelecimento?.nome}</span>
           </p>
         )}
 
-        <div className="mt-4 mb-4">
-          <p className="text-[10px] font-medium uppercase tracking-wide text-muted-subtle">A partir de</p>
-          <p className="event-price mt-0.5 text-xl font-black">{precoFormatado}</p>
+        <div className="mt-5 mb-5 flex items-baseline justify-between border-t border-border/60 pt-4">
+          <div>
+            <p className="text-[10px] font-bold uppercase tracking-wider text-muted-subtle">A partir de</p>
+            <p className="event-price mt-0.5 text-xl font-black">{precoFormatado}</p>
+          </div>
         </div>
 
         <button
           onClick={handleComprar}
           disabled={esgotado || loading}
-          className={`mt-auto flex min-h-[44px] w-full items-center justify-center gap-2 rounded-xl px-3 py-2.5 text-[10px] font-black uppercase tracking-wide transition-all ${
+          className={`mt-auto flex min-h-[46px] w-full items-center justify-center gap-2 rounded-2xl px-4 py-3 text-xs font-black uppercase tracking-wide transition-all ${
             esgotado || loading
-              ? 'cursor-not-allowed bg-border text-muted-subtle'
+              ? 'cursor-not-allowed bg-border text-muted-subtle shadow-none'
               : 'bg-primary text-primary-fg shadow-neon hover:bg-primary-hover active:scale-[0.98]'
           }`}
         >
           {loading ? 'Processando...' : esgotado ? 'Esgotado' : (
             <>
               Garantir Ingresso
-              <ArrowRight size={14} />
+              <ArrowRight size={16} strokeWidth={2.5} />
             </>
           )}
         </button>

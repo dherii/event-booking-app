@@ -1,6 +1,8 @@
+// src/features/admin/eventos/actions.ts
 'use server';
 
 import { revalidatePath } from 'next/cache';
+import { cookies } from 'next/headers';
 import { getSupabaseAdmin } from '@/src/config/supabase';
 import { createSupabaseServerClient } from '@/src/config/supabase-server';
 
@@ -35,12 +37,13 @@ interface EventoInput {
   atracoes?: AtividadeInput[];
 }
 
-export async function criarEventoComLotes(data: EventoInput) {
+// ─── Helper interno para pegar o estabelecimento ativo ou global ───
+async function getEstabelecimentoAtivo() {
   const supabaseAuth = await createSupabaseServerClient();
   const { data: { user } } = await supabaseAuth.auth.getUser();
 
   if (!user) {
-    throw new Error('Você precisa estar logado para criar um evento.');
+    throw new Error('Você precisa estar logado.');
   }
 
   const { data: profile, error: profileError } = await supabaseAuth
@@ -53,9 +56,35 @@ export async function criarEventoComLotes(data: EventoInput) {
     throw new Error('Não foi possível carregar seu perfil.');
   }
 
+  const isSuperAdmin = profile.role === 'super_admin';
+  const cookieStore = await cookies();
+  const cookieEstabelecimento = cookieStore.get('admin_estabelecimento_id')?.value;
+
+  const isGlobal = isSuperAdmin && cookieEstabelecimento === 'Todos';
+
+  const estabelecimentoId = isSuperAdmin && cookieEstabelecimento && cookieEstabelecimento !== 'Todos'
+    ? cookieEstabelecimento
+    : profile.estabelecimento_id;
+
+  return {
+    userId: user.id,
+    role: profile.role,
+    isSuperAdmin,
+    isGlobal,
+    estabelecimentoId,
+  };
+}
+
+export async function criarEventoComLotes(data: EventoInput) {
+  const { role, estabelecimentoId, isGlobal } = await getEstabelecimentoAtivo();
+
   const papeisPermitidos = ['super_admin', 'dono_estabelecimento', 'staff_checkin'];
-  if (!papeisPermitidos.includes(profile.role)) {
+  if (!papeisPermitidos.includes(role)) {
     throw new Error('Você não tem permissão para criar eventos.');
+  }
+
+  if (isGlobal) {
+    throw new Error('Selecione um estabelecimento específico para criar um evento (o modo global exibe dados somados).');
   }
 
   const supabase = getSupabaseAdmin();
@@ -72,7 +101,7 @@ export async function criarEventoComLotes(data: EventoInput) {
       categoria: data.categoria,
       classificacao_etaria: data.classificacaoEtaria ?? 18,
       banner_url: data.bannerUrl ?? null,
-      estabelecimento_id: profile.estabelecimento_id ?? null,
+      estabelecimento_id: estabelecimentoId ?? null,
     })
     .select()
     .single();
@@ -132,18 +161,10 @@ export async function criarEventoComLotes(data: EventoInput) {
 }
 
 export async function deletarEvento(eventoId: string) {
-  const supabaseAuth = await createSupabaseServerClient();
-  const { data: { user } } = await supabaseAuth.auth.getUser();
-  if (!user) throw new Error('Você precisa estar logado.');
-
-  const { data: profile } = await supabaseAuth
-    .from('profiles')
-    .select('estabelecimento_id, role')
-    .eq('id', user.id)
-    .single();
+  const { role, estabelecimentoId } = await getEstabelecimentoAtivo();
 
   const papeisPermitidos = ['super_admin', 'dono_estabelecimento'];
-  if (!profile || !papeisPermitidos.includes(profile.role)) {
+  if (!papeisPermitidos.includes(role)) {
     throw new Error('Você não tem permissão para deletar eventos.');
   }
 
@@ -158,9 +179,9 @@ export async function deletarEvento(eventoId: string) {
   if (fetchError || !evento) throw new Error('Evento não encontrado.');
 
   if (
-    profile.role !== 'super_admin' &&
+    role !== 'super_admin' &&
     evento.estabelecimento_id &&
-    evento.estabelecimento_id !== profile.estabelecimento_id
+    evento.estabelecimento_id !== estabelecimentoId
   ) {
     throw new Error('Você não tem permissão para deletar este evento.');
   }
@@ -181,15 +202,7 @@ export async function deletarEvento(eventoId: string) {
 }
 
 export async function buscarEvento(eventoId: string) {
-  const supabaseAuth = await createSupabaseServerClient();
-  const { data: { user } } = await supabaseAuth.auth.getUser();
-  if (!user) throw new Error('Não autenticado.');
-
-  const { data: profile } = await supabaseAuth
-    .from('profiles')
-    .select('estabelecimento_id, role')
-    .eq('id', user.id)
-    .single();
+  const { role, estabelecimentoId } = await getEstabelecimentoAtivo();
 
   const supabase = getSupabaseAdmin();
   const { data: evento, error } = await supabase
@@ -201,9 +214,9 @@ export async function buscarEvento(eventoId: string) {
   if (error || !evento) throw new Error('Evento não encontrado.');
 
   if (
-    profile?.role !== 'super_admin' &&
+    role !== 'super_admin' &&
     evento.estabelecimento_id &&
-    evento.estabelecimento_id !== profile?.estabelecimento_id
+    evento.estabelecimento_id !== estabelecimentoId
   ) {
     throw new Error('Você não tem permissão para acessar este evento.');
   }
@@ -228,18 +241,10 @@ interface EventoUpdateInput {
 }
 
 export async function atualizarEvento(eventoId: string, data: EventoUpdateInput) {
-  const supabaseAuth = await createSupabaseServerClient();
-  const { data: { user } } = await supabaseAuth.auth.getUser();
-  if (!user) throw new Error('Você precisa estar logado.');
-
-  const { data: profile } = await supabaseAuth
-    .from('profiles')
-    .select('estabelecimento_id, role')
-    .eq('id', user.id)
-    .single();
+  const { role, estabelecimentoId } = await getEstabelecimentoAtivo();
 
   const papeisPermitidos = ['super_admin', 'dono_estabelecimento', 'staff_checkin'];
-  if (!profile || !papeisPermitidos.includes(profile.role)) {
+  if (!papeisPermitidos.includes(role)) {
     throw new Error('Você não tem permissão para editar eventos.');
   }
 
@@ -254,9 +259,9 @@ export async function atualizarEvento(eventoId: string, data: EventoUpdateInput)
   if (fetchError || !eventoAtual) throw new Error('Evento não encontrado.');
 
   if (
-    profile.role !== 'super_admin' &&
+    role !== 'super_admin' &&
     eventoAtual.estabelecimento_id &&
-    eventoAtual.estabelecimento_id !== profile.estabelecimento_id
+    eventoAtual.estabelecimento_id !== estabelecimentoId
   ) {
     throw new Error('Você não tem permissão para editar este evento.');
   }
@@ -311,15 +316,7 @@ export async function atualizarEvento(eventoId: string, data: EventoUpdateInput)
 }
 
 export async function listarEventos() {
-  const supabaseAuth = await createSupabaseServerClient();
-  const { data: { user } } = await supabaseAuth.auth.getUser();
-  if (!user) throw new Error('Não autenticado.');
-
-  const { data: profile } = await supabaseAuth
-    .from('profiles')
-    .select('estabelecimento_id, role')
-    .eq('id', user.id)
-    .single();
+  const { estabelecimentoId, isGlobal } = await getEstabelecimentoAtivo();
 
   const supabase = getSupabaseAdmin();
   let query = supabase
@@ -327,8 +324,9 @@ export async function listarEventos() {
     .select('*, lotes (*), atividades (*)')
     .order('data_inicio', { ascending: true });
 
-  if (profile?.role !== 'super_admin' && profile?.estabelecimento_id) {
-    query = query.eq('estabelecimento_id', profile.estabelecimento_id);
+  // Se NÃO for global e houver um ID específico, filtra. Se for global, traz tudo de todas as casas!
+  if (!isGlobal && estabelecimentoId) {
+    query = query.eq('estabelecimento_id', estabelecimentoId);
   }
 
   const { data, error } = await query;

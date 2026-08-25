@@ -4,9 +4,7 @@ import { CatalogoClient } from '@/src/features/catalog/components/CatalogoClient
 import { SiteHeader } from '@/src/features/catalog/components/SiteHeader';
 import { listarMeusFavoritosIds } from '@/src/features/catalog/actions';
 import { BannerCarrossel } from '@/src/features/public/components/BannerCarrossel';
-import { Ticket } from 'lucide-react';
-
-export const revalidate = 0;
+import { Ticket, Sparkles } from 'lucide-react';
 
 export default async function HomePage() {
   const supabaseAuth = await createSupabaseServerClient();
@@ -64,8 +62,12 @@ export default async function HomePage() {
   }));
 
   return (
-    <main className="min-h-screen bg-background text-foreground">
-      <Suspense fallback={<div className="h-16 border-b border-border" />}>
+    <main className="min-h-screen bg-background text-foreground bg-grid-pattern relative">
+      {/* Elementos de luz difusa ambiental para profundidade visual */}
+      <div className="ambient-glow left-10 top-20" />
+      <div className="ambient-glow right-10 top-96" />
+
+      <Suspense fallback={<div className="h-16 border-b border-border bg-white/50 backdrop-blur-md" />}>
         <SiteHeader
           isLoggedIn={!!user}
           temPainelAdmin={temPainelAdmin}
@@ -74,29 +76,33 @@ export default async function HomePage() {
         />
       </Suspense>
 
-      <div className="relative mx-auto max-w-7xl px-4 py-6 sm:px-6 sm:py-8 lg:px-8 space-y-8">
-        <div className="pointer-events-none absolute left-1/4 top-0 -z-10 h-72 w-72 rounded-full bg-accent-purple/10 blur-3xl" />
-        <div className="pointer-events-none absolute right-1/4 top-40 -z-10 h-64 w-64 rounded-full bg-accent-pink/5 blur-3xl" />
-
+      <div className="relative mx-auto max-w-7xl px-4 py-8 sm:px-6 sm:py-10 lg:px-8 space-y-10">
+        
         {error && (
-          <div className="mb-6 rounded-xl border border-error-fg/20 bg-error-bg p-4 text-sm text-error-fg">
+          <div className="mb-6 rounded-2xl border border-error-fg/20 bg-error-bg p-4 text-sm text-error-fg shadow-sm">
             Erro ao carregar os eventos: {error.message}
           </div>
         )}
 
-        {/* Carrossel de Banners Automático */}
+        {/* Bloco de Destaque / Carrossel com container glassmorphism premium */}
         {eventosBanners.length > 0 && (
-          <BannerCarrossel eventos={eventosBanners} />
+          <section className="glass-card-premium p-3 sm:p-4 rounded-2xl shadow-xl">
+            <div className="flex items-center gap-2 mb-3 px-2">
+              <Sparkles className="w-4 h-4 text-primary" />
+              <span className="text-xs font-bold uppercase tracking-wider text-muted">Destaques da Semana</span>
+            </div>
+            <BannerCarrossel eventos={eventosBanners} />
+          </section>
         )}
 
         {!eventos || eventos.length === 0 ? (
-          <div className="clubber-card flex min-h-[400px] flex-col items-center justify-center rounded-2xl border-dashed text-center">
-            <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-accent-purple/10 text-accent-purple">
-              <Ticket size={26} />
+          <div className="glass-card-premium flex min-h-[420px] flex-col items-center justify-center rounded-3xl border-dashed text-center p-8">
+            <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/10 text-primary shadow-sm">
+              <Ticket size={30} />
             </div>
-            <p className="text-lg font-semibold text-foreground">Ainda não há eventos criados ou disponíveis.</p>
-            <p className="mt-2 max-w-md text-sm text-muted">
-              Em breve, você encontrará aqui os melhores eventos acadêmicos, universitários e experiências da sua região.
+            <p className="text-xl font-bold text-foreground">Ainda não há eventos disponíveis.</p>
+            <p className="mt-2 max-w-md text-sm text-muted leading-relaxed">
+              Em breve, você encontrará aqui os melhores eventos acadêmicos, universitários e experiências exclusivas da sua região.
             </p>
           </div>
         ) : (

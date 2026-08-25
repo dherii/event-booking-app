@@ -58,11 +58,11 @@ function AccountMenu({
         onClick={() => setOpen((o) => !o)}
         aria-label="Menu da conta"
         aria-expanded={open}
-        className="flex items-center gap-1.5 rounded-full border border-border bg-card pl-1 pr-2 py-1 hover:border-accent-purple transition-colors cursor-pointer"
+        className="flex items-center gap-2 rounded-full border border-border/80 bg-card/90 pl-1.5 pr-2.5 py-1 hover:border-primary/50 transition-all shadow-sm cursor-pointer"
       >
         {avatarUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={avatarUrl} alt="Perfil" className="h-7 w-7 rounded-full object-cover shrink-0" />
+          <img src={avatarUrl} alt="Perfil" className="h-7 w-7 rounded-full object-cover shrink-0 ring-1 ring-primary/20" />
         ) : (
           <span className="flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-br from-accent-purple to-accent-pink text-white text-xs font-bold shrink-0">
             {iniciais(userNome)}
@@ -72,9 +72,9 @@ function AccountMenu({
       </button>
 
       {open && (
-        <div className="absolute right-0 z-40 mt-2 w-56 rounded-xl border border-border bg-card shadow-card-hover py-1.5 text-sm">
-          <div className="px-3.5 py-2 border-b border-border">
-            <p className="font-semibold truncate">{userNome ?? 'Minha conta'}</p>
+        <div className="absolute right-0 z-40 mt-2.5 w-60 rounded-2xl border border-border bg-card/95 backdrop-blur-xl shadow-2xl py-2 text-sm">
+          <div className="px-4 py-2.5 border-b border-border/60">
+            <p className="font-bold truncate text-foreground">{userNome ?? 'Minha conta'}</p>
           </div>
 
           {temPainelAdmin && (
@@ -84,9 +84,9 @@ function AccountMenu({
                 setOpen(false);
                 window.location.href = '/admin';
               }}
-              className="w-full flex items-center gap-2.5 px-3.5 py-2.5 hover:bg-background transition-colors text-left cursor-pointer"
+              className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-background-secondary transition-colors text-left cursor-pointer font-medium"
             >
-              <LayoutDashboard size={15} className="text-primary" />
+              <LayoutDashboard size={16} className="text-primary" />
               Painel Admin
             </button>
           )}
@@ -96,21 +96,21 @@ function AccountMenu({
               key={href}
               href={href}
               onClick={() => setOpen(false)}
-              className="flex items-center gap-2.5 px-3.5 py-2.5 hover:bg-background transition-colors"
+              className="flex items-center gap-3 px-4 py-2.5 hover:bg-background-secondary transition-colors text-muted hover:text-foreground font-medium"
             >
-              <Icon size={15} className="text-muted" />
+              <Icon size={16} className="text-muted" />
               {label}
             </Link>
           ))}
 
-          <div className="my-1 border-t border-border" />
+          <div className="my-1.5 border-t border-border/60" />
 
           <button
             type="button"
             onClick={onLogout}
-            className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-error-fg hover:bg-error-bg transition-colors cursor-pointer"
+            className="w-full flex items-center gap-3 px-4 py-2.5 text-error-fg hover:bg-error-bg/60 transition-colors cursor-pointer font-medium"
           >
-            <LogOut size={15} />
+            <LogOut size={16} />
             Sair
           </button>
         </div>
@@ -127,8 +127,10 @@ export function SiteHeader({ isLoggedIn, temPainelAdmin, userNome, avatarUrl }: 
   const [menuAberto, setMenuAberto] = useState(false);
   const [busca, setBusca] = useState(searchParams.get('q') ?? '');
 
-  // Debounce na atualização da URL para evitar requisições a cada tecla digitada
   useEffect(() => {
+    const currentQuery = searchParams.get('q') ?? '';
+    if (busca === currentQuery) return;
+
     const timer = setTimeout(() => {
       const params = new URLSearchParams(searchParams.toString());
       if (busca.trim()) {
@@ -137,7 +139,6 @@ export function SiteHeader({ isLoggedIn, temPainelAdmin, userNome, avatarUrl }: 
         params.delete('q');
       }
       
-      // CORREÇÃO AQUI: Só adiciona o '?' se houver parâmetros de fato
       const queryString = params.toString();
       const targetUrl = queryString ? `${pathname}?${queryString}` : pathname;
       
@@ -156,37 +157,37 @@ export function SiteHeader({ isLoggedIn, temPainelAdmin, userNome, avatarUrl }: 
   }
 
   return (
-    <header className="sticky top-0 z-30 border-b border-border bg-background/85 backdrop-blur-xl">
-      <div className="mx-auto flex h-16 max-w-7xl items-center gap-4 px-4 sm:px-6 lg:px-8">
-        <Link href="/" className="group flex shrink-0 items-center gap-2.5">
-          <div className="relative flex h-9 w-9 items-center justify-center overflow-hidden rounded-xl bg-gradient-to-br from-accent-purple to-accent-pink shadow-purple transition-transform duration-300 group-hover:scale-105">
-            <span className="text-lg font-black text-white">C</span>
+    <header className="sticky top-0 z-30 border-b border-border/80 bg-background/80 backdrop-blur-2xl">
+      <div className="mx-auto flex h-20 max-w-7xl items-center gap-6 px-4 sm:px-6 lg:px-8">
+        <Link href="/" className="group flex shrink-0 items-center gap-3">
+          <div className="relative flex h-10 w-10 items-center justify-center overflow-hidden rounded-2xl bg-gradient-to-br from-accent-purple to-accent-pink shadow-purple transition-transform duration-300 group-hover:scale-105">
+            <span className="text-xl font-black text-white">C</span>
           </div>
-          <span className="text-xl font-black tracking-tight text-brand-gradient">Clubber</span>
+          <span className="text-2xl font-black tracking-tight text-brand-gradient">Clubber</span>
         </Link>
 
         {/* Busca — desktop */}
         <div className="hidden flex-1 md:block md:max-w-md lg:max-w-lg">
           <div className="relative">
-            <Search size={17} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-subtle pointer-events-none" />
+            <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-subtle pointer-events-none" />
             <input
               type="text"
               value={busca}
               onChange={(e) => setBusca(e.target.value)}
               placeholder="Buscar festa, pub, evento..."
               aria-label="Buscar festa, pub, evento"
-              className="input-base h-10 rounded-full border-border bg-card/70 pl-10 pr-4 text-sm placeholder:text-muted-subtle focus:border-primary"
+              className="input-base h-11 rounded-2xl border-border/85 bg-card/80 pl-11 pr-4 text-sm placeholder:text-muted-subtle focus:border-primary shadow-sm"
             />
           </div>
         </div>
 
-        <div className="ml-auto hidden items-center gap-2 sm:flex">
+        <div className="ml-auto hidden items-center gap-3 sm:flex">
           {isLoggedIn && !temPainelAdmin && (
             <Link
               href="/minhas-inscricoes"
-              className="flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-medium text-muted transition-colors hover:bg-card hover:text-foreground"
+              className="flex items-center gap-2 rounded-xl px-3.5 py-2.5 text-sm font-semibold text-muted transition-colors hover:bg-card hover:text-foreground"
             >
-              <Ticket size={17} />
+              <Ticket size={18} />
               Meus Ingressos
             </Link>
           )}
@@ -195,16 +196,16 @@ export function SiteHeader({ isLoggedIn, temPainelAdmin, userNome, avatarUrl }: 
             <>
               <Link
                 href="/auth/login"
-                className="rounded-xl px-3 py-2 text-sm font-medium text-muted transition-colors hover:bg-card hover:text-foreground"
+                className="rounded-xl px-4 py-2.5 text-sm font-semibold text-muted transition-colors hover:bg-card hover:text-foreground"
               >
                 Entrar
               </Link>
               <Link
                 href="/auth/cadastro"
-                className="flex items-center gap-2 rounded-xl bg-primary px-4 py-2 text-sm font-bold text-primary-fg shadow-neon transition-all hover:bg-primary-hover"
+                className="flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-bold text-primary-fg shadow-neon transition-all hover:bg-primary-hover"
               >
                 Criar conta
-                <ArrowRight size={15} />
+                <ArrowRight size={16} />
               </Link>
             </>
           )}
@@ -217,15 +218,13 @@ export function SiteHeader({ isLoggedIn, temPainelAdmin, userNome, avatarUrl }: 
               avatarUrl={avatarUrl}
               onLogout={handleLogout}
             />
-          ) : (
-            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-border bg-card text-muted" />
-          )}
+          ) : null}
         </div>
 
         <button
           type="button"
           onClick={() => setMenuAberto(true)}
-          className="ml-auto flex h-10 w-10 items-center justify-center rounded-xl text-muted hover:bg-card hover:text-foreground sm:hidden cursor-pointer"
+          className="ml-auto flex h-11 w-11 items-center justify-center rounded-xl bg-card border border-border text-muted hover:text-foreground sm:hidden cursor-pointer shadow-sm"
           aria-label="Abrir menu de navegação"
         >
           <Menu size={22} />
@@ -233,29 +232,29 @@ export function SiteHeader({ isLoggedIn, temPainelAdmin, userNome, avatarUrl }: 
       </div>
 
       {/* Busca — mobile */}
-      <div className="px-4 pb-3 md:hidden">
+      <div className="px-4 pb-4 md:hidden">
         <div className="relative">
-          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-subtle pointer-events-none" />
+          <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-subtle pointer-events-none" />
           <input
             type="text"
             value={busca}
             onChange={(e) => setBusca(e.target.value)}
             placeholder="Buscar festa, pub, evento..."
             aria-label="Buscar festa, pub, evento"
-            className="input-base h-10 rounded-full bg-card pl-9 text-sm"
+            className="input-base h-11 rounded-2xl bg-card pl-10 text-sm shadow-sm"
           />
         </div>
       </div>
 
       {!isLoggedIn && (
-        <div className="hidden border-t border-border/50 bg-background-secondary/50 sm:block">
-          <div className="mx-auto flex max-w-7xl items-center px-4 py-2 sm:px-6 lg:px-8">
+        <div className="hidden border-t border-border/40 bg-background-secondary/40 sm:block">
+          <div className="mx-auto flex max-w-7xl items-center px-4 py-2.5 sm:px-6 lg:px-8">
             <Link
               href="/auth/cadastro?redirect=/onboarding"
-              className="flex items-center gap-1 text-xs font-medium text-muted transition-colors hover:text-primary"
+              className="flex items-center gap-1.5 text-xs font-semibold text-muted transition-colors hover:text-primary"
             >
               Você organiza eventos?
-              <span className="text-primary">Cadastre sua casa de eventos</span>
+              <span className="text-primary font-bold">Cadastre sua casa de eventos</span>
               <ArrowRight size={13} />
             </Link>
           </div>
@@ -267,17 +266,17 @@ export function SiteHeader({ isLoggedIn, temPainelAdmin, userNome, avatarUrl }: 
         <>
           <button
             type="button"
-            className="fixed inset-0 z-40 bg-black/60 sm:hidden cursor-default border-none"
+            className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm sm:hidden cursor-default border-none"
             onClick={() => setMenuAberto(false)}
             aria-label="Fechar menu"
           />
-          <div className="fixed inset-y-0 right-0 z-50 flex w-72 flex-col bg-background border-l border-border p-5 sm:hidden">
-            <div className="flex items-center justify-between mb-6">
-              <span className="text-lg font-black text-brand-gradient">Menu</span>
+          <div className="fixed inset-y-0 right-0 z-50 flex w-80 flex-col bg-background border-l border-border p-6 sm:hidden shadow-2xl">
+            <div className="flex items-center justify-between mb-8">
+              <span className="text-xl font-black text-brand-gradient">Menu</span>
               <button
                 type="button"
                 onClick={() => setMenuAberto(false)}
-                className="flex h-9 w-9 items-center justify-center rounded-lg text-muted hover:bg-card hover:text-foreground cursor-pointer"
+                className="flex h-10 w-10 items-center justify-center rounded-xl border border-border text-muted hover:bg-card hover:text-foreground cursor-pointer"
                 aria-label="Fechar menu"
               >
                 <X size={20} />
@@ -285,20 +284,23 @@ export function SiteHeader({ isLoggedIn, temPainelAdmin, userNome, avatarUrl }: 
             </div>
 
             {isLoggedIn && (
-              <div className="flex items-center gap-3 px-1 py-3 mb-2 border-b border-border">
+              <div className="flex items-center gap-3.5 px-3 py-3.5 mb-4 rounded-2xl bg-card border border-border shadow-sm">
                 {avatarUrl ? (
                   // eslint-disable-next-line @next/next/no-img-element
-                  <img src={avatarUrl} alt="Perfil" className="h-10 w-10 rounded-full object-cover shrink-0" />
+                  <img src={avatarUrl} alt="Perfil" className="h-11 w-11 rounded-full object-cover shrink-0 ring-2 ring-primary/20" />
                 ) : (
-                  <span className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-accent-purple to-accent-pink text-white text-sm font-bold shrink-0">
+                  <span className="flex h-11 w-11 items-center justify-center rounded-full bg-gradient-to-br from-accent-purple to-accent-pink text-white text-sm font-bold shrink-0">
                     {iniciais(userNome)}
                   </span>
                 )}
-                <p className="font-semibold truncate">{userNome ?? 'Minha conta'}</p>
+                <div className="overflow-hidden">
+                  <p className="font-bold truncate text-foreground">{userNome ?? 'Minha conta'}</p>
+                  <p className="text-xs text-muted truncate">Sua conta ativa</p>
+                </div>
               </div>
             )}
 
-            <nav className="flex flex-col gap-2">
+            <nav className="flex flex-col gap-2.5">
               {isLoggedIn && temPainelAdmin && (
                 <button
                   type="button"
@@ -306,7 +308,7 @@ export function SiteHeader({ isLoggedIn, temPainelAdmin, userNome, avatarUrl }: 
                     setMenuAberto(false);
                     window.location.href = '/admin';
                   }}
-                  className="w-full flex items-center gap-3 rounded-xl border border-primary/30 bg-primary/10 px-4 py-3 text-sm font-semibold text-primary text-left cursor-pointer"
+                  className="w-full flex items-center gap-3.5 rounded-2xl border border-primary/30 bg-primary/10 px-4 py-3.5 text-sm font-bold text-primary text-left cursor-pointer"
                 >
                   <LayoutDashboard size={18} />
                   Painel Admin
@@ -319,7 +321,7 @@ export function SiteHeader({ isLoggedIn, temPainelAdmin, userNome, avatarUrl }: 
                     key={href}
                     href={href}
                     onClick={() => setMenuAberto(false)}
-                    className="flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-muted hover:bg-card hover:text-foreground"
+                    className="flex items-center gap-3.5 rounded-2xl px-4 py-3 text-sm font-semibold text-muted hover:bg-card hover:text-foreground transition-colors"
                   >
                     <Icon size={18} />
                     {label}
@@ -331,25 +333,25 @@ export function SiteHeader({ isLoggedIn, temPainelAdmin, userNome, avatarUrl }: 
                   <Link
                     href="/auth/login"
                     onClick={() => setMenuAberto(false)}
-                    className="flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-muted hover:bg-card hover:text-foreground"
+                    className="flex items-center gap-3.5 rounded-2xl px-4 py-3 text-sm font-semibold text-muted hover:bg-card hover:text-foreground"
                   >
                     Entrar
                   </Link>
                   <Link
                     href="/auth/cadastro"
                     onClick={() => setMenuAberto(false)}
-                    className="flex items-center justify-center gap-2 rounded-xl bg-primary px-4 py-3 text-sm font-bold text-primary-fg shadow-neon"
+                    className="flex items-center justify-center gap-2 rounded-2xl bg-primary px-4 py-3.5 text-sm font-bold text-primary-fg shadow-neon"
                   >
                     Criar conta
-                    <ArrowRight size={15} />
+                    <ArrowRight size={16} />
                   </Link>
                   <div className="my-2 border-t border-border" />
                   <Link
                     href="/auth/cadastro?redirect=/onboarding"
                     onClick={() => setMenuAberto(false)}
-                    className="flex items-center gap-1.5 px-4 py-2 text-xs font-medium text-muted hover:text-primary"
+                    className="flex items-center gap-1.5 px-4 py-2 text-xs font-semibold text-muted hover:text-primary"
                   >
-                    Você organiza eventos? <span className="text-primary">Cadastre-se</span>
+                    Você organiza eventos? <span className="text-primary font-bold">Cadastre-se</span>
                   </Link>
                 </>
               )}
@@ -358,7 +360,7 @@ export function SiteHeader({ isLoggedIn, temPainelAdmin, userNome, avatarUrl }: 
                 <button
                   type="button"
                   onClick={handleLogout}
-                  className="flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-error-fg hover:bg-error-bg mt-2 cursor-pointer"
+                  className="flex items-center gap-3.5 rounded-2xl px-4 py-3 text-sm font-semibold text-error-fg hover:bg-error-bg mt-4 cursor-pointer"
                 >
                   <LogOut size={18} />
                   Sair
