@@ -49,7 +49,6 @@ export default function BotaoComprarLote({
         }),
       });
 
-      // Adicionamos o checkoutUrl na tipagem do TypeScript
       const dados: {
         error?: string;
         requiresLogin?: boolean;

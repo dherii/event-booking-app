@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, Suspense } from 'react';
@@ -153,11 +152,8 @@ function CadastroForm() {
 
           {/* Decorações */}
           <div className="pointer-events-none absolute -top-32 -right-32 h-80 w-80 rounded-full bg-blue-500/15 blur-3xl" />
-
           <div className="pointer-events-none absolute -bottom-40 -left-40 h-96 w-96 rounded-full bg-blue-600/20 blur-3xl" />
-
           <div className="pointer-events-none absolute right-10 top-32 h-2 w-2 rounded-full bg-blue-400 shadow-[0_0_0_8px_rgba(59,130,246,0.08)]" />
-
           <div className="pointer-events-none absolute left-20 top-52 h-1.5 w-1.5 rounded-full bg-blue-400" />
 
           {/* Conteúdo */}
@@ -314,7 +310,7 @@ function CadastroForm() {
 
                 </div>
 
-                {/* QR Code fake visual */}
+                {/* QR Code visual */}
                 <div className="mt-5 flex justify-center">
 
                   <div className="grid h-[112px] w-[112px] grid-cols-7 gap-1 rounded-xl bg-white p-3">

@@ -286,6 +286,7 @@ function Header({
 
 // ─── Shell Principal ────────────────────────────────────────────────────────
 
+
 export function AdminShell({
   children,
   userNome,
@@ -294,6 +295,7 @@ export function AdminShell({
   userRole,
   headerAction,
 }: AdminShellProps) {
+
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
 

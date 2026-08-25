@@ -21,7 +21,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     .single();
 
   const papeisPermitidos = ['super_admin', 'dono_estabelecimento', 'staff_checkin', 'cliente'];
-  
+
   if (!profile || !papeisPermitidos.includes(profile.role)) {
     redirect('/');
   }
@@ -35,10 +35,10 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     const cookieStore = await cookies();
     const cookieEstabelecimento = cookieStore.get('admin_estabelecimento_id')?.value;
 
-    estabelecimentoAtualId = 
-      cookieEstabelecimento || 
-      profile.estabelecimento_id || 
-      estabelecimentos[0]?.id || 
+    estabelecimentoAtualId =
+      cookieEstabelecimento ||
+      profile.estabelecimento_id ||
+      estabelecimentos[0]?.id ||
       '';
   } else {
     // 2. Se for dono de estabelecimento comum, busca apenas o estabelecimento dele pelo ID do perfil
@@ -67,9 +67,9 @@ export default async function AdminLayout({ children }: { children: React.ReactN
 
   // Renderiza o seletor apenas se for super_admin
   const headerExtra = profile.role === 'super_admin' ? (
-    <EstabelecimentoSwitcher 
-      estabelecimentos={estabelecimentos} 
-      estabelecimentoAtualId={estabelecimentoAtualId} 
+    <EstabelecimentoSwitcher
+      estabelecimentos={estabelecimentos}
+      estabelecimentoAtualId={estabelecimentoAtualId}
       isSuperAdmin={true}
     />
   ) : undefined;
