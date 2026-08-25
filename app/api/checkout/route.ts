@@ -1,18 +1,8 @@
-// app/api/checkout/route.ts
-// Fluxo de checkout via MisticPay (Pix):
-//   1. Autentica o usuário
-//   2. Valida e busca o lote
-//   3. Checa inscrição duplicada
-//   4. Reserva vaga atomicamente (RPC reservar_vaga)
-//   5. Cria inscrição PENDENTE
-//   6. Chama MisticPay para gerar QR Code Pix
-//   7. Salva txid_pix (copyPaste) + qr_code_base64 na inscrição
-//   8. Retorna inscricaoId para o front redirecionar para /checkout/[id]
-
 import { NextResponse }              from 'next/server';
 import { getSupabaseAdmin }          from '@/src/config/supabase';
 import { createSupabaseServerClient } from '@/src/config/supabase-server';
-import { criarCobrancaPix }          from '@/src/lib/misticpay/client';
+// import { criarCobrancaPix }          from '@/src/lib/misticpay/client';
+import { criarClienteAsaas, criarCobrancaPixComSplit } from '@/src/lib/asaas/client';
 
 interface CheckoutBody {
   loteId: string;
@@ -41,7 +31,24 @@ export async function POST(request: Request) {
 
     const supabase = getSupabaseAdmin();
 
-    // ── 3. Busca lote + evento ────────────────────────────────────────────────
+    // ── 3. INTERCEPTAÇÃO: Validação de Perfil (Hard Wall) ─────────────────────
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('nome, cpf, telefone')
+      .eq('id', user.id)
+      .single();
+
+    if (!profile?.cpf || !profile?.telefone) {
+      return NextResponse.json(
+        { 
+          error: 'Faltam dados essenciais no seu perfil para concluir a compra.', 
+          requiresProfileCompletion: true // Flag que aciona o Modal no Frontend
+        },
+        { status: 403 },
+      );
+    }
+
+    // ── 4. Busca lote + evento ────────────────────────────────────────────────
     const { data: lote, error: loteError } = await supabase
       .from('lotes')
       .select(`
@@ -57,7 +64,7 @@ export async function POST(request: Request) {
 
     const evento = Array.isArray(lote.eventos) ? lote.eventos[0] : lote.eventos;
 
-    // ── 4. Idempotência — inscrição duplicada ─────────────────────────────────
+    // ── 5. Idempotência — inscrição duplicada ─────────────────────────────────
     const { data: inscricaoExistente } = await supabase
       .from('inscricoes')
       .select('id, status_pagamento')
@@ -73,7 +80,7 @@ export async function POST(request: Request) {
       );
     }
 
-    // ── 5. Reserva atômica de vaga ────────────────────────────────────────────
+    // ── 6. Reserva atômica de vaga ────────────────────────────────────────────
     const { data: reserva, error: reservaError } = await supabase
       .rpc('reservar_vaga', { p_lote_id: loteId })
       .single();
@@ -91,7 +98,7 @@ export async function POST(request: Request) {
 
     const precoBRL = Number(resultado.preco ?? lote.preco ?? 0);
 
-    // ── 6. Ingresso gratuito — emite direto sem gateway ───────────────────────
+    // ── 7. Ingresso gratuito — emite direto sem gateway ───────────────────────
     if (precoBRL === 0) {
       const { data: inscGratis, error: errGratis } = await supabase
         .from('inscricoes')
@@ -115,7 +122,7 @@ export async function POST(request: Request) {
       }, { status: 201 });
     }
 
-    // ── 7. Cria inscrição PENDENTE ────────────────────────────────────────────
+    // ── 8. Cria inscrição PENDENTE ────────────────────────────────────────────
     const { data: inscricao, error: inscricaoError } = await supabase
       .from('inscricoes')
       .insert({ usuario_id: user.id, lote_id: loteId, status_pagamento: 'PENDENTE' })
@@ -128,56 +135,45 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Erro ao gerar pedido de inscrição.' }, { status: 500 });
     }
 
-    // ── 8. Gera cobrança Pix na MisticPay ─────────────────────────────────────
-    // Busca nome/email do perfil para payerName
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('nome, cpf')
-      .eq('id', user.id)
-      .maybeSingle();
+    // ── 9. Gera cobrança Pix no Asaas ─────────────────────────────────────
+const payerName = profile.nome ?? user.email ?? 'Comprador';
+const payerDocument = profile.cpf.replace(/\D/g, ''); 
 
-    const payerName     = profile?.nome ?? user.email ?? 'Comprador';
-    // CPF sem formatação; fallback temporário se não cadastrado
-    const payerDocument = profile?.cpf?.replace(/\D/g, '') || '00000000000';
+let cobranca;
+try {
+  // Cria o cliente no Asaas
+  const asaasCustomerId = await criarClienteAsaas(payerName, payerDocument, user.email || '');
 
-    let cobranca;
-    try {
-      cobranca = await criarCobrancaPix({
-        amount:        precoBRL,
-        payerName,
-        payerDocument,
-        transactionId: inscricao.id,   // nosso UUID como ID externo
-        description:   `Ingresso - ${evento?.nome ?? lote.nome}`,
-      });
-    } catch (misticError) {
-      // Reverte reserva e inscrição se o gateway falhou
-      await supabase.rpc('devolver_vaga', { p_lote_id: loteId });
-      await supabase.from('inscricoes').delete().eq('id', inscricao.id);
+  // Aqui você buscaria a carteira do produtor (ex: estab.asaas_wallet_id)
+  const walletProdutor = 'wal_xxxxx'; // Substitua pela lógica de buscar no banco
 
-      console.error('[checkout] Erro na MisticPay:', misticError);
-      const msg = misticError instanceof Error ? misticError.message : 'Erro ao gerar cobrança Pix.';
-      return NextResponse.json({ error: msg }, { status: 502 });
-    }
+  // Cria a cobrança com Split
+  cobranca = await criarCobrancaPixComSplit({
+    customerId: asaasCustomerId,
+    valor: precoBRL,
+    descricao: `Ingresso - ${evento?.nome ?? lote.nome}`,
+    externalReference: inscricao.id, // Envia o ID da sua inscrição para o Asaas
+    carteiraOrganizadorId: walletProdutor,
+  });
 
-    // ── 9. Salva os dados do Pix na inscrição ─────────────────────────────────
-    // txid_pix = copyPaste (código copia e cola para exibir ao usuário)
-    // qr_code_base64 = imagem do QR Code para renderizar no front
-    // mp_transaction_id = ID retornado pela MisticPay para correlação no webhook
-    const { error: updateError } = await supabase
-      .from('inscricoes')
-      .update({
-        txid_pix:          cobranca.copyPaste,
-        qr_code_base64:    cobranca.qrCodeBase64,
-        mp_transaction_id: cobranca.mpTransactionId,
-      })
-      .eq('id', inscricao.id);
+} catch (asaasError) {
+  await supabase.rpc('devolver_vaga', { p_lote_id: loteId });
+  await supabase.from('inscricoes').delete().eq('id', inscricao.id);
+  console.error('[checkout] Erro no Asaas:', asaasError);
+  return NextResponse.json({ error: 'Erro ao gerar cobrança.' }, { status: 502 });
+}
 
-    if (updateError) {
-      // Não falha o checkout — o usuário já tem o QR Code em memória
-      console.error('[checkout] Erro ao salvar dados do Pix:', updateError);
-    }
+// ── 10. Salva os dados do Pix na inscrição ────────────────────────────────
+const { error: updateError } = await supabase
+  .from('inscricoes')
+  .update({
+    txid_pix: cobranca.copyPaste,
+    qr_code_base64: cobranca.qrCodeBase64,
+    mp_transaction_id: cobranca.asaasPaymentId, // Mantive o mesmo nome de coluna da MisticPay para reaproveitamento[cite: 1]
+  })
+  .eq('id', inscricao.id);
 
-    // ── 10. Retorna para o front redirecionar para /checkout/[id] ─────────────
+    // ── 11. Retorna para o front redirecionar ─────────────────────────────────
     return NextResponse.json({
       success:      true,
       inscricaoId:  inscricao.id,

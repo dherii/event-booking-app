@@ -17,7 +17,8 @@ import {
   ExternalLink,
   User,
   MoreVertical,
-  Banknote
+  Banknote,
+  Award
 } from 'lucide-react';
 
 // ─── Tipos ────────────────────────────────────────────────────────────────────
@@ -43,7 +44,7 @@ const NAV_ITEMS: NavItem[] = [
   { label: 'Dashboard', href: '/admin', icon: LayoutDashboard },
   { label: 'Eventos', href: '/admin/eventos', icon: CalendarDays },
   { label: 'Participantes', href: '/admin/participantes', icon: Users },
-  { label: 'Financeiro', href: '/admin/financeiro', icon: Wallet },
+  { label: 'Certificados', href: '/admin/certificados', icon: Award },
   { label: 'Repasses', href: '/admin/repasses', icon: Banknote },
   { label: 'Configurações', href: '/admin/configuracoes', icon: Settings },
 ];
