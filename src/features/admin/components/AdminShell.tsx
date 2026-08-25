@@ -34,6 +34,7 @@ interface AdminShellProps {
   userEmail: string;
   estabelecimentoNome: string;
   userRole: string;
+  headerAction?: React.ReactNode;
 }
 
 // ─── Constantes ───────────────────────────────────────────────────────────────
@@ -102,9 +103,16 @@ function Sidebar({
   const [menuUserAberto, setMenuUserAberto] = useState(false);
   const router = useRouter();
 
-  async function handleLogout() {
-    // Insira sua chamada de Logout aqui se usar Supabase ou NextAuth ex: await supabase.auth.signOut()
-    router.push('/login');
+ async function handleLogout() {
+    try {
+      const res = await fetch('/auth/logout', { method: 'POST' });
+      // Redireciona para a vitrine de ingressos (raiz /) após sair
+      router.push('/');
+      router.refresh();
+    } catch (error) {
+      console.error('Erro ao sair:', error);
+      router.push('/');
+    }
   }
 
   return (
@@ -212,10 +220,12 @@ function Header({
   onMenuClick,
   pathname,
   userNome,
+  headerAction,
 }: {
   onMenuClick: () => void;
   pathname: string;
   userNome: string;
+  headerAction?: React.ReactNode;
 }) {
   const current = NAV_ITEMS.find((i) => i.href === pathname);
 
@@ -241,27 +251,34 @@ function Header({
         </div>
       </div>
 
-      {/* Lado Direito: Ações e Perfil Rápido */}
       <div className="flex items-center gap-3">
-        {/* Notificações */}
-        <button
-          className="relative p-2 rounded-xl text-muted-foreground hover:text-foreground hover:bg-accent transition-colors border border-border/40"
-          aria-label="Notificações"
-        >
-          <Bell size={18} />
-          <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-primary rounded-full ring-2 ring-card" />
-        </button>
 
-        <div className="h-5 w-px bg-border mx-1 hidden sm:block" />
+  {headerAction}
 
-        <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-full bg-primary/20 text-primary flex items-center justify-center text-xs font-bold ring-2 ring-primary/10">
-            {iniciais(userNome)}
-          </div>
-          <span className="text-xs font-semibold text-foreground hidden md:inline-block">
-            {userNome.split(' ')[0]}
-          </span>
-        </div>
+  {/* Notificações */}
+  <button
+    className="relative p-2 rounded-xl text-muted-foreground hover:text-foreground hover:bg-accent transition-colors border border-border/40"
+    aria-label="Notificações"
+  >
+    <Bell size={18} />
+
+    <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-primary rounded-full ring-2 ring-card" />
+  </button>
+
+  <div className="h-5 w-px bg-border mx-1 hidden sm:block" />
+
+  <div className="flex items-center gap-2.5">
+    <div className="w-8 h-8 rounded-full bg-primary/20 text-primary flex items-center justify-center text-xs font-bold ring-2 ring-primary/10">
+      {iniciais(userNome)}
+    </div>
+
+    <span className="text-xs font-semibold text-foreground hidden md:inline-block">
+      {userNome.split(" ")[0]}
+    </span>
+  </div>
+
+
+        
       </div>
     </header>
   );
@@ -269,7 +286,16 @@ function Header({
 
 // ─── Shell Principal ────────────────────────────────────────────────────────
 
-export function AdminShell({ children, userNome, userEmail, estabelecimentoNome, userRole }: AdminShellProps) {
+
+export function AdminShell({
+  children,
+  userNome,
+  userEmail,
+  estabelecimentoNome,
+  userRole,
+  headerAction,
+}: AdminShellProps) {
+
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
 
@@ -306,7 +332,12 @@ export function AdminShell({ children, userNome, userEmail, estabelecimentoNome,
       )}
 
       <div className="flex flex-col flex-1 min-w-0">
-        <Header onMenuClick={() => setMobileOpen(true)} pathname={pathname} userNome={userNome} />
+        <Header
+  onMenuClick={() => setMobileOpen(true)}
+  pathname={pathname}
+  userNome={userNome}
+  headerAction={headerAction}
+/>
 
         <main className="flex-1 overflow-y-auto">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6">

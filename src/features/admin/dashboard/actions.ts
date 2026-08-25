@@ -1,16 +1,22 @@
+// src/features/admin/dashboard/actions.ts
 'use server';
 
 import { getSupabaseAdmin } from '@/src/config/supabase';
-import { createSupabaseServerClient } from '@/src/config/supabase-server';
+import { exigirDonoOuAdmin } from '@/src/features/admin/configuracoes/actions';
 
-// Interfaces para tipagem dos dados do banco
+interface Evento {
+  estabelecimento_id: string;
+}
+
 interface Lote {
   nome: string;
   preco?: number;
+  eventos?: Evento | Evento[] | null;
 }
 
-interface Inscricao {
-  lotes: Lote | null;
+interface InscricaoPaga {
+  status_pagamento: string;
+  lotes: Lote | Lote[] | null;
 }
 
 interface VendaAgrupada {
@@ -18,99 +24,95 @@ interface VendaAgrupada {
 }
 
 export async function getDashboardData() {
-  // 1. Descobre o estabelecimento do usuário logado — CRÍTICO: sem isso,
-  //    qualquer dono veria os dados de todos os estabelecimentos da plataforma.
-  const supabaseAuth = await createSupabaseServerClient();
-  const { data: { user } } = await supabaseAuth.auth.getUser();
+  try {
+    const { estabelecimentoId, isGlobal } = await exigirDonoOuAdmin();
 
-  if (!user) {
-    return { inscricoes: [], totalParticipantes: 0, chartData: [] };
+    const supabase = getSupabaseAdmin();
+
+    let queryInscricoes = supabase
+      .from('inscricoes')
+      .select(`
+        id,
+        status_pagamento,
+        created_at,
+        txid_pix,
+        lotes!inner (
+          preco,
+          nome,
+          eventos!inner ( nome, estabelecimento_id )
+        )
+      `)
+      .order('created_at', { ascending: false });
+
+    if (!isGlobal && estabelecimentoId) {
+      queryInscricoes = queryInscricoes.eq('lotes.eventos.estabelecimento_id', estabelecimentoId);
+    }
+
+    const { data: inscricoes, error } = await queryInscricoes;
+
+    if (error) {
+      console.error("❌ ERRO SUPABASE:", error.message);
+      return { inscricoes: [], totalParticipantes: 0, receitaTotal: 0, chartData: [] };
+    }
+
+    // Busca apenas as inscrições que são efetivamente pagas E cujo lote tem preço > 0
+    let queryPagas = supabase
+      .from('inscricoes')
+      .select(`
+        status_pagamento,
+        lotes!inner (
+          preco,
+          nome,
+          eventos!inner ( estabelecimento_id )
+        )
+      `)
+      .eq('status_pagamento', 'PAGO')
+      .gt('lotes.preco', 0);
+
+    if (!isGlobal && estabelecimentoId) {
+      queryPagas = queryPagas.eq('lotes.eventos.estabelecimento_id', estabelecimentoId);
+    }
+
+    const { data: inscricoesPagas } = await queryPagas.returns<InscricaoPaga[]>();
+
+    const receitaTotal = (inscricoesPagas || []).reduce((acc, curr) => {
+      const loteObj = Array.isArray(curr.lotes) ? curr.lotes[0] : curr.lotes;
+      const precoLote = Number(loteObj?.preco ?? 0);
+      return acc + precoLote;
+    }, 0);
+
+    let queryCount = supabase
+      .from('inscricoes')
+      .select('id, lotes!inner ( eventos!inner ( estabelecimento_id ) )', { count: 'exact', head: true });
+
+    if (!isGlobal && estabelecimentoId) {
+      queryCount = queryCount.eq('lotes.eventos.estabelecimento_id', estabelecimentoId);
+    }
+
+    const { count } = await queryCount;
+
+    // Agrupa apenas as vendas pagas reais para o gráfico financeiro de lotes vendidos
+    const vendasAgrupadas = (inscricoesPagas || []).reduce((acc: VendaAgrupada, curr: InscricaoPaga) => {
+      const loteObj = Array.isArray(curr.lotes) ? curr.lotes[0] : curr.lotes;
+      const nomeLote = loteObj?.nome || 'Sem Lote';
+      acc[nomeLote] = (acc[nomeLote] || 0) + 1;
+      return acc;
+    }, {});
+
+    const chartData = Object.entries(vendasAgrupadas).map(([nome, vendas]) => ({
+      nome,
+      vendas,
+      porcentagem: `w-[${Math.min((vendas / 50) * 100, 100)}%] bg-blue-500`
+    }));
+
+    return {
+      inscricoes: inscricoes ?? [],
+      totalParticipantes: count ?? 0,
+      receitaTotal: receitaTotal,
+      chartData: chartData
+    };
+  } catch (err) {
+    console.error("❌ ERRO DE AUTORIZAÇÃO NA DASHBOARD:", err);
+    return { inscricoes: [], totalParticipantes: 0, receitaTotal: 0, chartData: [] };
   }
-
-  const { data: profile } = await supabaseAuth
-    .from('profiles')
-    .select('estabelecimento_id, role')
-    .eq('id', user.id)
-    .single();
-
-  const ehSuperAdmin = profile?.role === 'super_admin';
-  const estabelecimentoId = profile?.estabelecimento_id;
-
-  if (!ehSuperAdmin && !estabelecimentoId) {
-    // Usuário sem estabelecimento vinculado — não deveria nem chegar aqui
-    // (middleware já bloqueia), mas por segurança retorna vazio.
-    return { inscricoes: [], totalParticipantes: 0, chartData: [] };
-  }
-
-  const supabase = getSupabaseAdmin();
-
-  // 2. Busca das inscrições para a tabela principal — com !inner,
-  //    filtro por estabelecimento_id e incluindo o 'nome' do lote.
-  let queryInscricoes = supabase
-    .from('inscricoes')
-    .select(`
-      id,
-      status_pagamento,
-      created_at,
-      txid_pix,
-      lotes (
-        preco,
-        nome,
-        eventos ( nome, estabelecimento_id )
-      )
-    `)
-    .order('created_at', { ascending: false });
-
-  if (!ehSuperAdmin) {
-    queryInscricoes = queryInscricoes.eq('lotes.eventos.estabelecimento_id', estabelecimentoId);
-  }
-
-  const { data: inscricoes, error } = await queryInscricoes;
-
-  if (error) {
-    console.error("❌ ERRO SUPABASE:", error.message);
-    return { inscricoes: [], totalParticipantes: 0, chartData: [] };
-  }
-
-  // 3. Busca das inscrições pagas para o gráfico — mesmo filtro
-  let queryPagas = supabase
-    .from('inscricoes')
-    .select('lotes!inner ( nome, eventos!inner ( estabelecimento_id ) )')
-    .eq('status_pagamento', 'PAGO');
-
-  if (!ehSuperAdmin) {
-    queryPagas = queryPagas.eq('lotes.eventos.estabelecimento_id', estabelecimentoId);
-  }
-
-  const { data: inscricoesPagas } = await queryPagas.returns<Inscricao[]>();
-
-  // 4. Total para o contador — mesmo filtro
-  let queryCount = supabase
-    .from('inscricoes')
-    .select('id, lotes!inner ( eventos!inner ( estabelecimento_id ) )', { count: 'exact', head: true });
-
-  if (!ehSuperAdmin) {
-    queryCount = queryCount.eq('lotes.eventos.estabelecimento_id', estabelecimentoId);
-  }
-
-  const { count } = await queryCount;
-
-  const vendasAgrupadas = (inscricoesPagas || []).reduce((acc: VendaAgrupada, curr: Inscricao) => {
-    const nomeLote = curr.lotes?.nome || 'Sem Lote';
-    acc[nomeLote] = (acc[nomeLote] || 0) + 1;
-    return acc;
-  }, {});
-
-  // 5. Transformação dos dados
-  const chartData = Object.entries(vendasAgrupadas).map(([nome, vendas]) => ({
-    nome,
-    vendas,
-    porcentagem: `w-[${Math.min((vendas / 50) * 100, 100)}%] bg-blue-500`
-  }));
-
-  return {
-    inscricoes: inscricoes ?? [],
-    totalParticipantes: count ?? 0,
-    chartData: chartData
-  };
 }

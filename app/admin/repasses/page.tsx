@@ -1,68 +1,10 @@
 // app/admin/repasses/page.tsx
 import { redirect } from 'next/navigation';
 import { createSupabaseServerClient } from '@/src/config/supabase-server';
-// Deixamos a chamada original comentada para quando formos reativar o banco
-// import { listarSaldosPendentes } from '@/src/features/admin/financeiro/repasses-actions';
+import { listarSaldosPendentes } from '@/src/features/admin/financeiro/repasses-actions';
 import { RepassesDashboard } from '@/src/features/admin/financeiro/components/RepassesDashboard';
 
 export const revalidate = 0;
-
-// ─── DADOS MOCKADOS PARA TESTE VISUAL ─────────────────────────────────────────
-const MOCK_SALDOS = [
-  {
-    estabelecimentoId: 'mock-direito',
-    nome: 'CA de Direito',
-    chavePix: '12.345.678/0001-99',
-    tipoChave: 'cnpj',
-    banco: 'Banco do Brasil',
-    favorecido: 'Diretório Acadêmico de Direito',
-    qtdIngressos: 320,
-    valorBruto: 16000.00,
-    taxaPlataforma: 800.00, // 5%
-    valorLiquido: 15200.00,
-    inscricoesIds: ['id1', 'id2'],
-  },
-  {
-    estabelecimentoId: 'mock-sistemas',
-    nome: 'CA de Sistemas de Informação',
-    chavePix: 'sistemas@unicatolica.edu.br',
-    tipoChave: 'email',
-    banco: 'Nubank',
-    favorecido: 'Centro Acadêmico de SI',
-    qtdIngressos: 145,
-    valorBruto: 5800.00,
-    taxaPlataforma: 290.00, // 5%
-    valorLiquido: 5510.00,
-    inscricoesIds: ['id3', 'id4'],
-  },
-  {
-    estabelecimentoId: 'mock-atletica-odonto',
-    nome: 'Atlética de Odontologia',
-    chavePix: '+5588999990000',
-    tipoChave: 'telefone',
-    banco: 'Mercado Pago',
-    favorecido: 'Assoc. Atlética Odontologia',
-    qtdIngressos: 210,
-    valorBruto: 8400.00,
-    taxaPlataforma: 420.00, // 5%
-    valorLiquido: 7980.00,
-    inscricoesIds: ['id5', 'id6'],
-  },
-  {
-    estabelecimentoId: 'mock-ca-odonto',
-    nome: 'CA de Odontologia',
-    chavePix: 'ca.odonto@gmail.com',
-    tipoChave: 'email',
-    banco: 'Banco Inter',
-    favorecido: 'Centro Acadêmico Odonto',
-    qtdIngressos: 65,
-    valorBruto: 2600.00,
-    taxaPlataforma: 130.00, // 5%
-    valorLiquido: 2470.00,
-    inscricoesIds: ['id7', 'id8'],
-  }
-];
-// ──────────────────────────────────────────────────────────────────────────────
 
 export default async function RepassesPage() {
   const supabaseAuth = await createSupabaseServerClient();
@@ -80,11 +22,10 @@ export default async function RepassesPage() {
     redirect('/admin'); 
   }
 
-  // Desativamos o banco temporariamente e injetamos os mocks
-  // const saldos = await listarSaldosPendentes();
-  const saldos = MOCK_SALDOS;
+  // Busca os saldos reais pendentes direto do Supabase
+  const saldos = await listarSaldosPendentes();
 
-  // O Next.js vai calcular o topo da página automaticamente com base nos mocks
+  // Calcula os totais reais com base nos dados do banco
   const totalGeralDevido = saldos.reduce((acc, s) => acc + s.valorLiquido, 0);
   const suaFatiaTotal = saldos.reduce((acc, s) => acc + s.taxaPlataforma, 0);
 

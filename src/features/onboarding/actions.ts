@@ -3,6 +3,7 @@
 
 import { getSupabaseAdmin } from '@/src/config/supabase';
 import { createSupabaseServerClient } from '@/src/config/supabase-server';
+import { redirect } from 'next/navigation'; // <-- Importe o redirect aqui
 
 function gerarSlug(nome: string) {
   return nome
@@ -94,5 +95,6 @@ export async function criarEstabelecimento(data: CriarEstabelecimentoInput) {
     throw new Error(errPerfil.message);
   }
 
-  return { success: true, estabelecimentoId: estabelecimento.id, slug: slugFinal };
+  // Redireciona diretamente para o painel administrativo após o sucesso
+  redirect('/admin');
 }

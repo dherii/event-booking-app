@@ -1,3 +1,6 @@
+// src/features/admin/components/MetricCards.tsx
+'use client';
+
 interface MetricCardsProps {
   metrics: {
     totalReceita: number;
@@ -28,7 +31,7 @@ export default function MetricCards({ metrics }: MetricCardsProps) {
       </div>
 
       <div className="bg-card border border-border p-6 rounded-xl shadow-sm">
-        <p className="text-muted text-xs font-semibold uppercase tracking-wider">Aguardando Pix</p>
+        <p className="text-muted text-xs font-semibold uppercase tracking-wider">Aguardando Pagamento</p>
         <p className="text-2xl font-bold text-amber-600 mt-2">{metrics.pendentes}</p>
       </div>
     </div>

@@ -1,10 +1,11 @@
 // src/features/admin/financeiro/actions.ts
-'use server'
+'use server';
 
 import { getSupabaseAdmin } from '@/src/config/supabase';
 import { createSupabaseServerClient } from '@/src/config/supabase-server';
+import { cookies } from 'next/headers';
 import { calcularTaxa } from './types';
-import type { Transacao, StatusTransacao } from './types';
+import type { Transacao, StatusTransacao, DadosBancarios } from './types';
 
 const STATUS_MAP: Record<string, StatusTransacao> = {
   PAGO: 'pago',
@@ -13,17 +14,46 @@ const STATUS_MAP: Record<string, StatusTransacao> = {
   CANCELADO: 'estornado',
 };
 
-export async function listarTransacoes(): Promise<Transacao[]> {
+// ─── Helper interno para pegar o estabelecimento ativo ou global ───
+async function getEstabelecimentoAtivo() {
   const supabaseAuth = await createSupabaseServerClient();
   const { data: { user } } = await supabaseAuth.auth.getUser();
-  if (!user) throw new Error('Não autenticado.');
 
-  const { data: profile } = await supabaseAuth
+  if (!user) {
+    throw new Error('Não autenticado.');
+  }
+
+  const { data: profile, error: profileError } = await supabaseAuth
     .from('profiles')
     .select('estabelecimento_id, role')
     .eq('id', user.id)
     .single();
 
+  if (profileError || !profile) {
+    throw new Error('Não foi possível carregar seu perfil.');
+  }
+
+  const isSuperAdmin = profile.role === 'super_admin';
+  const cookieStore = await cookies();
+  const cookieEstabelecimento = cookieStore.get('admin_estabelecimento_id')?.value;
+
+  const isGlobal = isSuperAdmin && cookieEstabelecimento === 'Todos';
+
+  const estabelecimentoId = isSuperAdmin && cookieEstabelecimento && cookieEstabelecimento !== 'Todos'
+    ? cookieEstabelecimento
+    : profile.estabelecimento_id;
+
+  return {
+    userId: user.id,
+    role: profile.role,
+    isSuperAdmin,
+    isGlobal,
+    estabelecimentoId,
+  };
+}
+
+export async function listarTransacoes(): Promise<Transacao[]> {
+  const { estabelecimentoId, isGlobal } = await getEstabelecimentoAtivo();
   const supabase = getSupabaseAdmin();
 
   let query = supabase
@@ -42,8 +72,9 @@ export async function listarTransacoes(): Promise<Transacao[]> {
     `)
     .order('created_at', { ascending: false });
 
-  if (profile?.role !== 'super_admin') {
-    query = query.eq('lotes.eventos.estabelecimento_id', profile?.estabelecimento_id);
+  // Se não for global, aplica o filtro do estabelecimento específico
+  if (!isGlobal && estabelecimentoId) {
+    query = query.eq('lotes.eventos.estabelecimento_id', estabelecimentoId);
   }
 
   const { data: inscricoes, error } = await query;
@@ -75,7 +106,7 @@ export async function listarTransacoes(): Promise<Transacao[]> {
       id: i.id,
       data: i.created_at,
       aluno: nomeporId.get(i.usuario_id) ?? 'Comprador',
-      email: '', // e-mail fica para uma próxima etapa (vive em auth.users)
+      email: '', // e-mail fica para uma próxima etapa
       evento: evento?.nome ?? 'Evento removido',
       lote: lote?.nome ?? '—',
       valorBruto: bruto,
@@ -88,55 +119,46 @@ export async function listarTransacoes(): Promise<Transacao[]> {
 
 // ─── Dados Bancários (Repasse MisticPay) ──────────────────────────────────────
 
-import { DadosBancarios } from './types';
-
 export async function buscarDadosBancarios(): Promise<DadosBancarios | null> {
-  const supabaseAuth = await createSupabaseServerClient();
-  const { data: { user } } = await supabaseAuth.auth.getUser();
-  if (!user) return null;
+  try {
+    const { estabelecimentoId, isGlobal } = await getEstabelecimentoAtivo();
+    
+    // No modo global, não existe um único dado bancário padrão de estabelecimento
+    if (isGlobal || !estabelecimentoId) return null;
 
-  const { data: profile } = await supabaseAuth
-    .from('profiles')
-    .select('estabelecimento_id')
-    .eq('id', user.id)
-    .single();
+    const supabase = getSupabaseAdmin();
+    const { data } = await supabase
+      .from('estabelecimentos')
+      .select('*')
+      .eq('id', estabelecimentoId)
+      .single();
 
-  if (!profile?.estabelecimento_id) return null;
+    if (!data || !data.recebedor_documento) return null;
 
-  const supabase = getSupabaseAdmin();
-  const { data } = await supabase
-    .from('estabelecimentos')
-    .select('*')
-    .eq('id', profile.estabelecimento_id)
-    .single();
-
-  if (!data || !data.recebedor_documento) return null; // Se não tem documento, assume que nunca preencheu
-
-  return {
-    tipoConta: data.recebedor_tipo_conta as 'pf' | 'pj',
-    nomeRazao: data.recebedor_nome || '',
-    cpfCnpj: data.recebedor_documento || '',
-    banco: data.recebedor_banco || '',
-    agencia: data.recebedor_agencia || '',
-    conta: data.recebedor_conta || '',
-    digitoConta: data.recebedor_digito || '',
-    chavePix: data.recebedor_chave_pix || '',
-    tipoChavePix: data.recebedor_tipo_chave_pix as any,
-  };
+    return {
+      tipoConta: (data.recebedor_tipo_conta as 'pf' | 'pj') ?? 'pf',
+      nomeRazao: data.recebedor_nome || '',
+      cpfCnpj: data.recebedor_documento || '',
+      banco: data.recebedor_banco || '',
+      agencia: data.recebedor_agencia || '',
+      conta: data.recebedor_conta || '',
+      digitoConta: data.recebedor_digito || '',
+      chavePix: data.recebedor_chave_pix || '',
+      tipoChavePix: (data.recebedor_tipo_chave_pix as DadosBancarios['tipoChavePix']) || 'email',
+    };
+  } catch {
+    return null;
+  }
 }
 
 export async function salvarDadosBancarios(dados: DadosBancarios) {
-  const supabaseAuth = await createSupabaseServerClient();
-  const { data: { user } } = await supabaseAuth.auth.getUser();
-  if (!user) throw new Error('Não autenticado.');
+  const { estabelecimentoId, isGlobal } = await getEstabelecimentoAtivo();
+  
+  if (isGlobal) {
+    throw new Error('Não é possível salvar dados bancários no modo global. Selecione um estabelecimento específico.');
+  }
 
-  const { data: profile } = await supabaseAuth
-    .from('profiles')
-    .select('estabelecimento_id')
-    .eq('id', user.id)
-    .single();
-
-  if (!profile?.estabelecimento_id) throw new Error('Estabelecimento não encontrado.');
+  if (!estabelecimentoId) throw new Error('Estabelecimento não encontrado.');
 
   const supabase = getSupabaseAdmin();
   
@@ -153,7 +175,7 @@ export async function salvarDadosBancarios(dados: DadosBancarios) {
       recebedor_chave_pix: dados.chavePix,
       recebedor_tipo_chave_pix: dados.tipoChavePix,
     })
-    .eq('id', profile.estabelecimento_id);
+    .eq('id', estabelecimentoId);
 
   if (error) throw new Error('Erro ao salvar os dados bancários.');
   return { success: true };

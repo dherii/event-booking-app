@@ -57,8 +57,11 @@ export default async function AdminDashboardPage() {
       0
     ),
     totalInscritos: data.length,
-    pagos: data.filter((i) => i.status_pagamento === 'PAGO').length,
-    pendentes: data.filter((i) => i.status_pagamento !== 'PAGO').length,
+    // Só conta como pago se o status for PAGO E o preço do lote for maior que 0
+    pagos: data.filter((i) => i.status_pagamento === 'PAGO' && (Number(i.lotes?.preco) || 0) > 0).length,
+    // Conta como gratuito se o preço for 0
+    gratuitos: data.filter((i) => (Number(i.lotes?.preco) || 0) === 0).length,
+    pendentes: data.filter((i) => i.status_pagamento !== 'PAGO' && (Number(i.lotes?.preco) || 0) > 0).length,
   };
 
   return (

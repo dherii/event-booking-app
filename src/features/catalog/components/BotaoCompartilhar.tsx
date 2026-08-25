@@ -13,7 +13,7 @@ export function BotaoCompartilhar({ eventoNome, eventoId }: { eventoNome: string
       try {
         await navigator.share({ title: eventoNome, text: `Dá uma olhada nesse evento: ${eventoNome}`, url });
       } catch {
-        // usuário cancelou o compartilhamento — não faz nada
+        // usuário cancelou
       }
       return;
     }
@@ -26,9 +26,9 @@ export function BotaoCompartilhar({ eventoNome, eventoId }: { eventoNome: string
   return (
     <button
       onClick={compartilhar}
-      className="flex items-center gap-1.5 text-xs font-medium text-muted hover:text-primary transition-colors"
+      className="flex items-center gap-2 rounded-xl bg-card border border-border px-3.5 py-2 text-xs font-bold text-muted hover:text-foreground hover:border-primary/40 transition-all shadow-sm cursor-pointer"
     >
-      {copiado ? <Check size={14} className="text-success-fg" /> : <Share2 size={14} />}
+      {copiado ? <Check size={15} className="text-success-fg" /> : <Share2 size={15} />}
       {copiado ? 'Link copiado!' : 'Compartilhar'}
     </button>
   );
