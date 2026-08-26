@@ -91,6 +91,8 @@ export async function criarEventoComLotes(data: EventoInput) {
 
   const supabase = getSupabaseAdmin();
 
+  const totalDias = calcularDiasEvento(data.dataInicio, data.dataFim);
+
   const { data: evento, error: errEvento } = await supabase
     .from('eventos')
     .insert({
@@ -106,6 +108,7 @@ export async function criarEventoComLotes(data: EventoInput) {
       latitude: data.latitude ?? null,   // <-- Salvando latitude
       longitude: data.longitude ?? null, // <-- Salvando longitude
       estabelecimento_id: estabelecimentoId ?? null,
+      dias: totalDias,
     })
     .select()
     .single();
@@ -256,6 +259,8 @@ export async function atualizarEvento(eventoId: string, data: EventoUpdateInput)
 
   const supabase = getSupabaseAdmin();
 
+  const totalDias = calcularDiasEvento(data.dataInicio, data.dataFim);
+
   const { data: eventoAtual, error: fetchError } = await supabase
     .from('eventos')
     .select('estabelecimento_id')
@@ -283,8 +288,7 @@ export async function atualizarEvento(eventoId: string, data: EventoUpdateInput)
       modalidade: data.modalidade,
       categoria: data.categoria,
       classificacao_etaria: data.classificacaoEtaria ?? 18,
-      latitude: data.latitude ?? null,   // <-- Atualizando latitude
-      longitude: data.longitude ?? null, // <-- Atualizando longitude
+
     })
     .eq('id', eventoId);
 
@@ -339,4 +343,19 @@ export async function listarEventos() {
   const { data, error } = await query;
   if (error) throw error;
   return data;
+}
+
+// Calcula a diferença de dias entre duas datas (incluindo o próprio dia)
+function calcularDiasEvento(dataInicio: string, dataFim: string): number {
+  const inicio = new Date(dataInicio);
+  const fim = new Date(dataFim);
+  
+  // Zera as horas para focar apenas nos dias
+  inicio.setUTCHours(0, 0, 0, 0);
+  fim.setUTCHours(0, 0, 0, 0);
+  
+  const diferencaMs = fim.getTime() - inicio.getTime();
+  const diferencaDias = Math.ceil(diferencaMs / (1000 * 60 * 60 * 24));
+  
+  return diferencaDias + 1; // +1 porque se começa e termina dia 06, é 1 dia de evento.
 }

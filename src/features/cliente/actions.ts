@@ -259,6 +259,8 @@ export interface MeuPerfil {
   nome: string | null;
   avatarUrl: string | null;
   email: string;
+  cpf: string | null;
+  telefone: string | null;
 }
 
 export async function buscarMeuPerfil(): Promise<MeuPerfil> {
@@ -266,9 +268,10 @@ export async function buscarMeuPerfil(): Promise<MeuPerfil> {
   const { data: { user } } = await supabaseAuth.auth.getUser();
   if (!user) throw new Error('Não autenticado.');
 
+  // Atualizado para buscar cpf e telefone
   const { data: profile } = await supabaseAuth
     .from('profiles')
-    .select('nome, avatar_url')
+    .select('nome, avatar_url, cpf, telefone')
     .eq('id', user.id)
     .single();
 
@@ -276,10 +279,17 @@ export async function buscarMeuPerfil(): Promise<MeuPerfil> {
     nome: profile?.nome ?? null,
     avatarUrl: profile?.avatar_url ?? null,
     email: user.email ?? '',
+    cpf: profile?.cpf ?? null,
+    telefone: profile?.telefone ?? null,
   };
 }
 
-export async function atualizarPerfil(data: { nome: string; avatarUrl?: string | null }) {
+export async function atualizarPerfil(data: { 
+  nome: string; 
+  avatarUrl?: string | null;
+  cpf?: string;
+  telefone?: string;
+}) {
   const supabaseAuth = await createSupabaseServerClient();
   const { data: { user } } = await supabaseAuth.auth.getUser();
   if (!user) throw new Error('Não autenticado.');
@@ -288,9 +298,43 @@ export async function atualizarPerfil(data: { nome: string; avatarUrl?: string |
 
   const payload: Record<string, unknown> = { nome: data.nome };
   if (data.avatarUrl !== undefined) payload.avatar_url = data.avatarUrl;
+  
+  // Limpa a formatação antes de salvar
+  if (data.cpf !== undefined) payload.cpf = data.cpf.replace(/\D/g, '');
+  if (data.telefone !== undefined) payload.telefone = data.telefone.replace(/\D/g, '');
 
   const { error } = await supabase.from('profiles').update(payload).eq('id', user.id);
   if (error) throw new Error(error.message);
+
+  return { success: true };
+}
+
+// ─── Hard Wall (Checkout) ─────────────────────────────────────────────────
+
+export async function completarPerfilCheckout(cpf: string, telefone: string) {
+  const supabaseAuth = await createSupabaseServerClient();
+  const { data: { user } } = await supabaseAuth.auth.getUser();
+
+  if (!user) throw new Error('Usuário não autenticado.');
+
+  // Limpa caracteres especiais
+  const cpfLimpo = cpf.replace(/\D/g, '');
+  const telefoneLimpo = telefone.replace(/\D/g, '');
+
+  if (cpfLimpo.length !== 11) throw new Error('CPF inválido.');
+  if (telefoneLimpo.length < 10) throw new Error('Telefone inválido.');
+
+  const supabaseAdmin = getSupabaseAdmin();
+
+  const { error } = await supabaseAdmin
+    .from('profiles')
+    .update({ 
+      cpf: cpfLimpo, 
+      telefone: telefoneLimpo 
+    })
+    .eq('id', user.id);
+
+  if (error) throw new Error('Erro ao salvar os dados.');
 
   return { success: true };
 }

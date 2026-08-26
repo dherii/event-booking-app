@@ -1,9 +1,9 @@
-// src/features/admin/financeiro/components/FormDadosBancarios.tsx
 'use client';
 
-import { useState } from 'react';
-import { ShieldCheck, Info, ChevronDown, Check, Loader2 } from 'lucide-react';
-import type { DadosBancarios } from '../types';
+import { useState, useEffect } from 'react';
+import { ShieldCheck, CheckCircle, ChevronDown, Info, Loader2, Check } from 'lucide-react';
+import { DadosBancarios } from '../types';
+import { salvarDadosBancarios, buscarDadosBancarios } from '../actions';
 
 const BANCOS = [
   { codigo: '001', nome: 'Banco do Brasil' },
@@ -100,21 +100,46 @@ export function FormDadosBancarios() {
   const [form, setForm] = useState<DadosBancarios>(INITIAL);
   const [saved, setSaved] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [loadingInit, setLoadingInit] = useState(true);
+  const [erro, setErro] = useState<string | null>(null);
+
+  // Busca os dados do banco assim que a aba é aberta
+  useEffect(() => {
+    buscarDadosBancarios().then((dadosNoBanco) => {
+      if (dadosNoBanco) {
+        setForm(dadosNoBanco);
+      }
+      setLoadingInit(false);
+    });
+  }, []);
 
   function update(patch: Partial<DadosBancarios>) {
     setSaved(false);
+    setErro(null);
     setForm((prev) => ({ ...prev, ...patch }));
   }
 
   async function handleSave(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
-    await new Promise((r) => setTimeout(r, 1000));
-    setLoading(false);
-    setSaved(true);
+    setErro(null);
+
+    try {
+      await salvarDadosBancarios(form);
+      setSaved(true);
+      setTimeout(() => setSaved(false), 3000);
+    } catch (err) {
+      setErro(err instanceof Error ? err.message : 'Erro ao salvar os dados.');
+    } finally {
+      setLoading(false);
+    }
   }
 
   const isPJ = form.tipoConta === 'pj';
+
+  if (loadingInit) {
+    return <div className="py-10 flex justify-center"><Loader2 className="animate-spin text-blue-600" /></div>;
+  }
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -127,11 +152,10 @@ export function FormDadosBancarios() {
                 key={tipo}
                 type="button"
                 onClick={() => update({ tipoConta: tipo, cpfCnpj: '', tipoChavePix: tipo === 'pj' ? 'cnpj' : 'cpf' })}
-                className={`flex-1 py-2.5 rounded-xl text-xs font-medium border transition-all cursor-pointer ${
-                  form.tipoConta === tipo
+                className={`flex-1 py-2.5 rounded-xl text-xs font-medium border transition-all cursor-pointer ${form.tipoConta === tipo
                     ? 'bg-blue-50 border-blue-600 text-blue-600 font-semibold shadow-xs'
                     : 'bg-white border-slate-200 text-slate-600 hover:border-slate-300'
-                }`}
+                  }`}
               >
                 {tipo === 'pj' ? 'Pessoa Jurídica (CA / Entidade)' : 'Pessoa Física'}
               </button>
@@ -250,10 +274,10 @@ export function FormDadosBancarios() {
                 className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
                 placeholder={
                   form.tipoChavePix === 'email' ? 'centro@unicatolica.edu.br' :
-                  form.tipoChavePix === 'telefone' ? '+55 88 99999-0000' :
-                  form.tipoChavePix === 'cpf' ? '000.000.000-00' :
-                  form.tipoChavePix === 'cnpj' ? '00.000.000/0001-00' :
-                  'Chave aleatória (UUID)'
+                    form.tipoChavePix === 'telefone' ? '+55 88 99999-0000' :
+                      form.tipoChavePix === 'cpf' ? '000.000.000-00' :
+                        form.tipoChavePix === 'cnpj' ? '00.000.000/0001-00' :
+                          'Chave aleatória (UUID)'
                 }
                 value={form.chavePix}
                 onChange={(e) => update({ chavePix: e.target.value })}
@@ -262,6 +286,8 @@ export function FormDadosBancarios() {
           </div>
         </div>
 
+        {erro && <p className="text-sm text-red-600 font-medium">{erro}</p>}
+        
         <div className="flex items-center justify-end gap-3 pt-4">
           {saved && (
             <span className="flex items-center gap-1.5 text-sm text-emerald-600 font-medium">
