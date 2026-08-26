@@ -30,6 +30,21 @@ interface Evento {
   banner_url?: string | null;
   estabelecimentos?: Estabelecimento | Estabelecimento[] | null;
   lotes?: Lote[];
+  latitude?: number | null;
+  longitude?: number | null;
+}
+
+// Função matemática para calcular a distância em KM (Fórmula de Haversine)
+function calcularDistanciaKm(lat1: number, lon1: number, lat2: number, lon2: number) {
+  const R = 6371; // Raio da Terra em km
+  const dLat = (lat2 - lat1) * (Math.PI / 180);
+  const dLon = (lon2 - lon1) * (Math.PI / 180);
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(lat1 * (Math.PI / 180)) * Math.cos(lat2 * (Math.PI / 180)) *
+    Math.sin(dLon / 2) * Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c;
 }
 
 function ehHoje(iso: string) {
@@ -42,23 +57,65 @@ export function CatalogoClient({ eventos, favoritosIds = [] }: { eventos: Evento
   const searchParams = useSearchParams();
   const [filtro, setFiltro] = useState('Tudo');
   const [ordem, setOrdem] = useState<'recentes' | 'proximos' | 'baratos'>('recentes');
+  
+  // Estados para geolocalização do usuário
+  const [localizacaoUsuario, setLocalizacaoUsuario] = useState<{ lat: number; lon: number } | null>(null);
+  const [carregandoLocal, setCarregandoLocal] = useState(false);
 
   const busca = (searchParams.get('q') ?? '').toLowerCase().trim();
 
+  // Categorias dinâmicas + garantindo a pílula "Perto de mim"
   const categorias = useMemo(() => {
     const unicas = Array.from(new Set(eventos.map((e) => e.categoria).filter(Boolean))) as string[];
-    return ['Tudo', 'Hoje', ...unicas];
+    const base = ['Tudo', 'Hoje', 'Perto de mim'];
+    for (const cat of unicas) {
+      if (!base.includes(cat)) base.push(cat);
+    }
+    return base;
   }, [eventos]);
 
-  const eventosFiltrados = useMemo(() => {
-    let lista = eventos;
+  // Função disparada ao clicar em "Perto de mim"
+  const lidarComCliqueFiltro = (cat: string) => {
+    if (cat === 'Perto de mim') {
+      if (!navigator.geolocation) {
+        alert('Seu navegador não suporta geolocalização.');
+        return;
+      }
+      setCarregandoLocal(true);
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          setLocalizacaoUsuario({
+            lat: position.coords.latitude,
+            lon: position.coords.longitude,
+          });
+          setFiltro('Perto de mim');
+          setCarregandoLocal(false);
+        },
+        (error) => {
+          console.error(error);
+          setCarregandoLocal(false);
+          alert('Não foi possível obter sua localização. Verifique as permissões do navegador.');
+        }
+      );
+    } else {
+      setFiltro(cat);
+    }
+  };
 
+  const eventosFiltrados = useMemo(() => {
+    let lista = [...eventos];
+
+    // Filtros por Categoria / Hoje / Perto de mim
     if (filtro === 'Hoje') {
       lista = lista.filter((e) => ehHoje(e.data_inicio));
-    } else if (filtro !== 'Tudo') {
+    } else if (filtro === 'Perto de mim' && localizacaoUsuario) {
+      // Aqui não excluímos nenhum evento, apenas garantimos que eles mantenham todos visíveis
+      // A ordenação logo abaixo vai priorizar os mais perto
+    } else if (filtro !== 'Tudo' && filtro !== 'Perto de mim') {
       lista = lista.filter((e) => e.categoria === filtro);
     }
 
+    // Filtro de Busca por Texto
     if (busca) {
       lista = lista.filter((e) => {
         const estabelecimento = Array.isArray(e.estabelecimentos) ? e.estabelecimentos[0] : e.estabelecimentos;
@@ -71,15 +128,23 @@ export function CatalogoClient({ eventos, favoritosIds = [] }: { eventos: Evento
       });
     }
 
-    if (ordem === 'proximos') {
-      lista = [...lista].sort((a, b) => new Date(a.data_inicio).getTime() - new Date(b.data_inicio).getTime());
+    // Ordenação
+    if (filtro === 'Perto de mim' && localizacaoUsuario) {
+      // Ordena especificamente por proximidade geográfica se o usuário ativou
+      lista.sort((a, b) => {
+        const distA = (a.latitude && a.longitude) ? calcularDistanciaKm(localizacaoUsuario.lat, localizacaoUsuario.lon, a.latitude, a.longitude) : 999999;
+        const distB = (b.latitude && b.longitude) ? calcularDistanciaKm(localizacaoUsuario.lat, localizacaoUsuario.lon, b.latitude, b.longitude) : 999999;
+        return distA - distB;
+      });
+    } else if (ordem === 'proximos') {
+      lista.sort((a, b) => new Date(a.data_inicio).getTime() - new Date(b.data_inicio).getTime());
     } else if (ordem === 'baratos') {
       const menorPreco = (e: Evento) => Math.min(...(e.lotes?.map((l) => Number(l.preco)) ?? [Infinity]));
-      lista = [...lista].sort((a, b) => menorPreco(a) - menorPreco(b));
+      lista.sort((a, b) => menorPreco(a) - menorPreco(b));
     }
 
     return lista;
-  }, [eventos, filtro, busca, ordem]);
+  }, [eventos, filtro, busca, ordem, localizacaoUsuario]);
 
   function IconeFiltro({ categoria }: { categoria: string }) {
     if (categoria === 'Hoje') return <CalendarDays size={16} />;
@@ -99,7 +164,8 @@ export function CatalogoClient({ eventos, favoritosIds = [] }: { eventos: Evento
           return (
             <button
               key={cat}
-              onClick={() => setFiltro(cat)}
+              onClick={() => lidarComCliqueFiltro(cat)}
+              disabled={cat === 'Perto de mim' && carregandoLocal}
               className={`flex shrink-0 items-center gap-2 rounded-2xl border px-4.5 py-3 text-sm font-bold whitespace-nowrap transition-all shadow-sm ${
                 ativo
                   ? 'border-transparent bg-primary text-primary-fg shadow-neon scale-105'
@@ -107,7 +173,7 @@ export function CatalogoClient({ eventos, favoritosIds = [] }: { eventos: Evento
               }`}
             >
               <IconeFiltro categoria={cat} />
-              {cat}
+              {cat === 'Perto de mim' && carregandoLocal ? 'Obtendo local...' : cat}
             </button>
           );
         })}
@@ -157,9 +223,25 @@ export function CatalogoClient({ eventos, favoritosIds = [] }: { eventos: Evento
         </div>
       ) : (
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          {eventosFiltrados.map((evento) => (
-            <CardEvento key={evento.id} evento={evento} favoritadoInicial={favoritosIds.includes(evento.id)} />
-          ))}
+          {eventosFiltrados.map((evento) => {
+            // Se o usuário clicou em "Perto de mim", podemos calcular a distância e mostrar no card
+            let distanciaTexto = null;
+            if (filtro === 'Perto de mim' && localizacaoUsuario && evento.latitude && evento.longitude) {
+              const km = calcularDistanciaKm(localizacaoUsuario.lat, localizacaoUsuario.lon, evento.latitude, evento.longitude);
+              distanciaTexto = `${km.toFixed(1)} km de você`;
+            }
+
+            return (
+              <div key={evento.id} className="flex flex-col">
+                <CardEvento evento={evento} favoritadoInicial={favoritosIds.includes(evento.id)} />
+                {distanciaTexto && (
+                  <span className="mt-1.5 text-xs font-medium text-primary px-1">
+                    📍 {distanciaTexto}
+                  </span>
+                )}
+              </div>
+            );
+          })}
         </div>
       )}
     </div>
