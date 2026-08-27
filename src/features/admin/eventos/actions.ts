@@ -33,6 +33,8 @@ interface EventoInput {
   categoria?: string;
   classificacaoEtaria?: number;
   bannerUrl?: string | null;
+  latitude?: number | null;  // <-- Adicionado
+  longitude?: number | null; // <-- Adicionado
   lotes: LoteInput[];
   atracoes?: AtividadeInput[];
 }
@@ -103,6 +105,8 @@ export async function criarEventoComLotes(data: EventoInput) {
       categoria: data.categoria,
       classificacao_etaria: data.classificacaoEtaria ?? 18,
       banner_url: data.bannerUrl ?? null,
+      latitude: data.latitude ?? null,   // <-- Salvando latitude
+      longitude: data.longitude ?? null, // <-- Salvando longitude
       estabelecimento_id: estabelecimentoId ?? null,
       dias: totalDias,
     })
@@ -240,6 +244,8 @@ interface EventoUpdateInput {
   modalidade?: string;
   categoria?: string;
   classificacaoEtaria?: number;
+  latitude?: number | null;  // <-- Adicionado
+  longitude?: number | null; // <-- Adicionado
   lotes: LoteUpdateInput[];
 }
 
@@ -282,7 +288,7 @@ export async function atualizarEvento(eventoId: string, data: EventoUpdateInput)
       modalidade: data.modalidade,
       categoria: data.categoria,
       classificacao_etaria: data.classificacaoEtaria ?? 18,
-      dias: totalDias,
+
     })
     .eq('id', eventoId);
 
@@ -330,7 +336,6 @@ export async function listarEventos() {
     .select('*, lotes (*), atividades (*)')
     .order('data_inicio', { ascending: true });
 
-  // Se NÃO for global e houver um ID específico, filtra. Se for global, traz tudo de todas as casas!
   if (!isGlobal && estabelecimentoId) {
     query = query.eq('estabelecimento_id', estabelecimentoId);
   }
