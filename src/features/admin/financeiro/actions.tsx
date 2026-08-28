@@ -2,10 +2,9 @@
 'use server';
 
 import { getSupabaseAdmin } from '@/src/config/supabase';
-import { createSupabaseServerClient } from '@/src/config/supabase-server';
-import { cookies } from 'next/headers';
 import { calcularTaxa } from './types';
 import type { Transacao, StatusTransacao, DadosBancarios } from './types';
+import { exigirDonoOuAdmin } from '@/src/features/admin/configuracoes/actions';
 
 const STATUS_MAP: Record<string, StatusTransacao> = {
   PAGO: 'pago',
@@ -14,46 +13,8 @@ const STATUS_MAP: Record<string, StatusTransacao> = {
   CANCELADO: 'estornado',
 };
 
-// ─── Helper interno para pegar o estabelecimento ativo ou global ───
-async function getEstabelecimentoAtivo() {
-  const supabaseAuth = await createSupabaseServerClient();
-  const { data: { user } } = await supabaseAuth.auth.getUser();
-
-  if (!user) {
-    throw new Error('Não autenticado.');
-  }
-
-  const { data: profile, error: profileError } = await supabaseAuth
-    .from('profiles')
-    .select('estabelecimento_id, role')
-    .eq('id', user.id)
-    .single();
-
-  if (profileError || !profile) {
-    throw new Error('Não foi possível carregar seu perfil.');
-  }
-
-  const isSuperAdmin = profile.role === 'super_admin';
-  const cookieStore = await cookies();
-  const cookieEstabelecimento = cookieStore.get('admin_estabelecimento_id')?.value;
-
-  const isGlobal = isSuperAdmin && cookieEstabelecimento === 'Todos';
-
-  const estabelecimentoId = isSuperAdmin && cookieEstabelecimento && cookieEstabelecimento !== 'Todos'
-    ? cookieEstabelecimento
-    : profile.estabelecimento_id;
-
-  return {
-    userId: user.id,
-    role: profile.role,
-    isSuperAdmin,
-    isGlobal,
-    estabelecimentoId,
-  };
-}
-
 export async function listarTransacoes(): Promise<Transacao[]> {
-  const { estabelecimentoId, isGlobal } = await getEstabelecimentoAtivo();
+  const { estabelecimentoId, isGlobal } = await exigirDonoOuAdmin();
   const supabase = getSupabaseAdmin();
 
   let query = supabase
@@ -121,8 +82,7 @@ export async function listarTransacoes(): Promise<Transacao[]> {
 
 export async function buscarDadosBancarios(): Promise<DadosBancarios | null> {
   try {
-    const { estabelecimentoId, isGlobal } = await getEstabelecimentoAtivo();
-    
+    const { estabelecimentoId, isGlobal } = await exigirDonoOuAdmin();
     // No modo global, não existe um único dado bancário padrão de estabelecimento
     if (isGlobal || !estabelecimentoId) return null;
 
@@ -152,7 +112,7 @@ export async function buscarDadosBancarios(): Promise<DadosBancarios | null> {
 }
 
 export async function salvarDadosBancarios(dados: DadosBancarios) {
-  const { estabelecimentoId, isGlobal } = await getEstabelecimentoAtivo();
+  const { estabelecimentoId, isGlobal } = await exigirDonoOuAdmin();
   
   if (isGlobal) {
     throw new Error('Não é possível salvar dados bancários no modo global. Selecione um estabelecimento específico.');
@@ -161,7 +121,7 @@ export async function salvarDadosBancarios(dados: DadosBancarios) {
   if (!estabelecimentoId) throw new Error('Estabelecimento não encontrado.');
 
   const supabase = getSupabaseAdmin();
-  
+
   const { error } = await supabase
     .from('estabelecimentos')
     .update({
