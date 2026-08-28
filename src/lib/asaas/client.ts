@@ -1,17 +1,36 @@
 // src/lib/asaas/client.ts
-
 const ASAAS_BASE_URL = process.env.ASAAS_API_URL || 'https://sandbox.asaas.com/api/v3';
-const ASAAS_API_KEY = process.env.ASAAS_API_KEY;
+
+function hojeBrasil(): string {
+  return new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Sao_Paulo' }).format(new Date());
+  // en-CA formata como YYYY-MM-DD
+}
 
 function getHeaders() {
-  if (!ASAAS_API_KEY) throw new Error('ASAAS_API_KEY não configurada');
+  const apiKey = process.env.ASAAS_API_KEY;
+
+  if (!apiKey) throw new Error('ASAAS_API_KEY não configurada');
+
   return {
-    'access_token': ASAAS_API_KEY,
+    'access_token': apiKey,
     'Content-Type': 'application/json',
   };
 }
 
 export async function criarClienteAsaas(nome: string, cpfCnpj: string, email: string) {
+  // Tenta localizar cliente já existente no Asaas por CPF antes de criar um novo
+  const buscaResponse = await fetch(`${ASAAS_BASE_URL}/customers?cpfCnpj=${cpfCnpj}`, {
+    method: 'GET',
+    headers: getHeaders(),
+  });
+
+  if (buscaResponse.ok) {
+    const busca = await buscaResponse.json();
+    if (busca.data?.length > 0) {
+      return busca.data[0].id;
+    }
+  }
+
   const response = await fetch(`${ASAAS_BASE_URL}/customers`, {
     method: 'POST',
     headers: getHeaders(),
@@ -19,15 +38,15 @@ export async function criarClienteAsaas(nome: string, cpfCnpj: string, email: st
   });
   const data = await response.json();
   if (!response.ok) throw new Error(data.errors?.[0]?.description || 'Erro ao criar cliente');
-  return data.id; // Retorna o customerId (ex: cus_000005)
+  return data.id;
 }
 
 export interface CriarCobrancaParams {
   customerId: string;
   valor: number;
   descricao: string;
-  externalReference: string; // Nosso inscricao.id
-  carteiraOrganizadorId?: string; // ID da subconta do produtor para o split
+  externalReference: string;
+  carteiraOrganizadorId?: string;
 }
 
 export async function criarCobrancaPixComSplit({
@@ -37,18 +56,16 @@ export async function criarCobrancaPixComSplit({
   externalReference,
   carteiraOrganizadorId
 }: CriarCobrancaParams) {
-  
-  // Exemplo de Split: 90% produtor, 10% plataforma
+
   const splitRule = carteiraOrganizadorId ? [
     { walletId: carteiraOrganizadorId, percentualValue: 90 },
-    // O Asaas entende que o restante (10%) fica na conta Master (sua plataforma)
   ] : [];
 
   const payload = {
     customer: customerId,
     billingType: 'PIX',
     value: valor,
-    dueDate: new Date().toISOString().split('T')[0], // Vence hoje
+    dueDate: hojeBrasil(),
     description: descricao,
     externalReference,
     split: splitRule.length > 0 ? splitRule : undefined,
@@ -63,17 +80,43 @@ export async function criarCobrancaPixComSplit({
   const data = await response.json();
   if (!response.ok) throw new Error(data.errors?.[0]?.description || 'Erro ao criar cobrança');
 
-  // Para o PIX, precisamos fazer uma chamada extra para pegar o QR Code
-  const qrCodeResponse = await fetch(`${ASAAS_BASE_URL}/payments/${data.id}/pixQrCode`, {
-    method: 'GET',
-    headers: getHeaders(),
-  });
-  
-  const qrCodeData = await qrCodeResponse.json();
+  const qrCode = await buscarPixQrCodeComRetry(data.id);
 
   return {
     asaasPaymentId: data.id,
-    copyPaste: qrCodeData.payload,
-    qrCodeBase64: qrCodeData.encodedImage,
+    copyPaste: qrCode.payload,
+    qrCodeBase64: `data:image/png;base64,${qrCode.encodedImage}`, // Asaas devolve sem o prefixo data:
   };
+}
+
+// ─── Busca o QR Code com retry — geração é assíncrona no Asaas ─────────────
+async function buscarPixQrCodeComRetry(
+  paymentId: string,
+  tentativas = 4,
+  esperaMs = 800,
+): Promise<{ payload: string; encodedImage: string }> {
+  let ultimoErro: string = 'Motivo desconhecido.';
+
+  for (let i = 0; i < tentativas; i++) {
+    const response = await fetch(`${ASAAS_BASE_URL}/payments/${paymentId}/pixQrCode`, {
+      method: 'GET',
+      headers: getHeaders(),
+    });
+
+    const data = await response.json().catch(() => null);
+
+    if (response.ok && data?.encodedImage && data?.payload) {
+      return { payload: data.payload, encodedImage: data.encodedImage };
+    }
+
+    // Guarda o motivo real retornado pelo Asaas pra diagnóstico
+    ultimoErro = data?.errors?.[0]?.description || JSON.stringify(data) || `HTTP ${response.status}`;
+    console.warn(`[asaas] Tentativa ${i + 1}/${tentativas} de buscar QR Code falhou:`, ultimoErro);
+
+    if (i < tentativas - 1) {
+      await new Promise((resolve) => setTimeout(resolve, esperaMs));
+    }
+  }
+
+  throw new Error(`QR Code Pix indisponível: ${ultimoErro}`);
 }

@@ -2,10 +2,10 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { cookies } from 'next/headers';
 import { getSupabaseAdmin } from '@/src/config/supabase';
 import { createSupabaseServerClient } from '@/src/config/supabase-server';
 import type { Inscrito, StatusPagamento } from './types';
+import { exigirDonoOuAdmin } from '@/src/features/admin/configuracoes/actions';
 
 const STATUS_MAP: Record<string, StatusPagamento> = {
   PAGO: 'pago',
@@ -20,43 +20,7 @@ export type ResultadoCheckin =
   | { tipo: 'ja-feito'; checkinAt: string | null }
   | { tipo: 'erro'; mensagem: string };
 
-// ─── Helper interno para pegar o estabelecimento ativo ou global ───
-async function getEstabelecimentoAtivo() {
-  const supabaseAuth = await createSupabaseServerClient();
-  const { data: { user } } = await supabaseAuth.auth.getUser();
 
-  if (!user) {
-    throw new Error('Não autenticado.');
-  }
-
-  const { data: profile, error: profileError } = await supabaseAuth
-    .from('profiles')
-    .select('estabelecimento_id, role')
-    .eq('id', user.id)
-    .single();
-
-  if (profileError || !profile) {
-    throw new Error('Não foi possível carregar seu perfil.');
-  }
-
-  const isSuperAdmin = profile.role === 'super_admin';
-  const cookieStore = await cookies();
-  const cookieEstabelecimento = cookieStore.get('admin_estabelecimento_id')?.value;
-
-  const isGlobal = isSuperAdmin && cookieEstabelecimento === 'Todos';
-
-  const estabelecimentoId = isSuperAdmin && cookieEstabelecimento && cookieEstabelecimento !== 'Todos'
-    ? cookieEstabelecimento
-    : profile.estabelecimento_id;
-
-  return {
-    userId: user.id,
-    role: profile.role,
-    isSuperAdmin,
-    isGlobal,
-    estabelecimentoId,
-  };
-}
 
 export async function realizarCheckin(inscricaoId: string): Promise<ResultadoCheckin> {
   let role: string;
@@ -64,7 +28,7 @@ export async function realizarCheckin(inscricaoId: string): Promise<ResultadoChe
   let isGlobal: boolean;
 
   try {
-    const info = await getEstabelecimentoAtivo();
+    const info = await exigirDonoOuAdmin();
     role = info.role;
     estabelecimentoId = info.estabelecimentoId;
     isGlobal = info.isGlobal;
@@ -167,7 +131,7 @@ export async function alternarFrequencia(inscricaoId: string, diaNumero: number,
 }
 
 async function verificarPermissaoInscricao(inscricaoId: string) {
-  const { role, estabelecimentoId, isGlobal } = await getEstabelecimentoAtivo();
+  const { role, estabelecimentoId, isGlobal } = await exigirDonoOuAdmin();
 
   if (isGlobal) {
     throw new Error('Ação não permitida no modo global. Selecione um estabelecimento específico.');
@@ -247,7 +211,7 @@ export async function cancelarInscricao(inscricaoId: string) {
 }
 
 export async function listarParticipantes(): Promise<Inscrito[]> {
-  const { estabelecimentoId, isGlobal } = await getEstabelecimentoAtivo();
+  const { estabelecimentoId, isGlobal } = await exigirDonoOuAdmin();
 
   const supabase = getSupabaseAdmin();
 

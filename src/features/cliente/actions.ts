@@ -3,6 +3,7 @@
 
 import { getSupabaseAdmin } from '@/src/config/supabase';
 import { createSupabaseServerClient } from '@/src/config/supabase-server';
+import { validarCPF } from '@/src/lib/validators/cpf';
 
 export interface MinhaInscricao {
   id: string;
@@ -321,7 +322,7 @@ export async function completarPerfilCheckout(cpf: string, telefone: string) {
   const cpfLimpo = cpf.replace(/\D/g, '');
   const telefoneLimpo = telefone.replace(/\D/g, '');
 
-  if (cpfLimpo.length !== 11) throw new Error('CPF inválido.');
+  if (!validarCPF(cpfLimpo)) throw new Error('CPF inválido.');
   if (telefoneLimpo.length < 10) throw new Error('Telefone inválido.');
 
   const supabaseAdmin = getSupabaseAdmin();
