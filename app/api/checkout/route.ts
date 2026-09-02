@@ -1,8 +1,8 @@
-import { NextResponse }              from 'next/server';
-import { getSupabaseAdmin }          from '@/src/config/supabase';
+import { NextResponse } from 'next/server';
+import { getSupabaseAdmin } from '@/src/config/supabase';
 import { createSupabaseServerClient } from '@/src/config/supabase-server';
-// import { criarCobrancaPix }          from '@/src/lib/misticpay/client';
 import { criarClienteAsaas, criarCobrancaPixComSplit } from '@/src/lib/asaas/client';
+import { validarCPF } from '@/src/lib/validators/cpf';
 
 interface CheckoutBody {
   loteId: string;
@@ -34,15 +34,20 @@ export async function POST(request: Request) {
     // ── 3. INTERCEPTAÇÃO: Validação de Perfil (Hard Wall) ─────────────────────
     const { data: profile } = await supabase
       .from('profiles')
-      .select('nome, cpf, telefone')
+      .select('nome, cpf, telefone, asaas_customer_id') // <-- Adicionado aqui!
       .eq('id', user.id)
-      .single();
+      .maybeSingle();
 
-    if (!profile?.cpf || !profile?.telefone) {
+    // Limpa a formatação para contar apenas os números puros
+    const cpfLimpo = profile?.cpf?.replace(/\D/g, '') || '';
+    const telLimpo = profile?.telefone?.replace(/\D/g, '') || '';
+
+    // Exige exatos 11 dígitos pro CPF e pelo menos 10 para o Telefone (com DDD)
+    if (!profile || !validarCPF(cpfLimpo) || telLimpo.length < 10) {
       return NextResponse.json(
-        { 
-          error: 'Faltam dados essenciais no seu perfil para concluir a compra.', 
-          requiresProfileCompletion: true // Flag que aciona o Modal no Frontend
+        {
+          error: 'Faltam dados essenciais no seu perfil para concluir a compra.',
+          requiresProfileCompletion: true
         },
         { status: 403 },
       );
@@ -53,7 +58,7 @@ export async function POST(request: Request) {
       .from('lotes')
       .select(`
         id, nome, tipo, preco,
-        eventos!inner ( id, nome, data_inicio )
+        eventos!inner ( id, nome, data_inicio, estabelecimento_id ) 
       `)
       .eq('id', loteId)
       .single();
@@ -116,8 +121,8 @@ export async function POST(request: Request) {
         .insert({ inscricao_id: inscGratis.id, utilizado: false });
 
       return NextResponse.json({
-        success:     true,
-        gratuito:    true,
+        success: true,
+        gratuito: true,
         inscricaoId: inscGratis.id,
       }, { status: 201 });
     }
@@ -136,47 +141,66 @@ export async function POST(request: Request) {
     }
 
     // ── 9. Gera cobrança Pix no Asaas ─────────────────────────────────────
-const payerName = profile.nome ?? user.email ?? 'Comprador';
-const payerDocument = profile.cpf.replace(/\D/g, ''); 
+    const payerName = profile?.nome ?? user.email ?? 'Comprador';
+    const payerDocument = cpfLimpo;
 
-let cobranca;
-try {
-  // Cria o cliente no Asaas
-  const asaasCustomerId = await criarClienteAsaas(payerName, payerDocument, user.email || '');
+    // Busca a carteira do produtor vinculada ao evento
+    const { data: estab } = await supabase
+      .from('estabelecimentos')
+      .select('asaas_wallet_id')
+      .eq('id', evento.estabelecimento_id)
+      .single();
 
-  // Aqui você buscaria a carteira do produtor (ex: estab.asaas_wallet_id)
-  const walletProdutor = 'wal_xxxxx'; // Substitua pela lógica de buscar no banco
+    let cobranca;
+    try {
+      const asaasCustomerId = await criarClienteAsaas(payerName, payerDocument, user.email || '');
 
-  // Cria a cobrança com Split
-  cobranca = await criarCobrancaPixComSplit({
-    customerId: asaasCustomerId,
-    valor: precoBRL,
-    descricao: `Ingresso - ${evento?.nome ?? lote.nome}`,
-    externalReference: inscricao.id, // Envia o ID da sua inscrição para o Asaas
-    carteiraOrganizadorId: walletProdutor,
-  });
+      if (!profile?.asaas_customer_id) {
+        await supabase.from('profiles').update({ asaas_customer_id: asaasCustomerId }).eq('id', user.id);
+      }
 
-} catch (asaasError) {
-  await supabase.rpc('devolver_vaga', { p_lote_id: loteId });
-  await supabase.from('inscricoes').delete().eq('id', inscricao.id);
-  console.error('[checkout] Erro no Asaas:', asaasError);
-  return NextResponse.json({ error: 'Erro ao gerar cobrança.' }, { status: 502 });
-}
+      // Busca a carteira Asaas real do organizador (null = sem split, 100% pra master)
+      const { data: estabDados } = await supabase
+        .from('estabelecimentos')
+        .select('asaas_wallet_id')
+        .eq('id', evento?.estabelecimento_id ?? '')
+        .maybeSingle();
 
-// ── 10. Salva os dados do Pix na inscrição ────────────────────────────────
-const { error: updateError } = await supabase
-  .from('inscricoes')
-  .update({
-    txid_pix: cobranca.copyPaste,
-    qr_code_base64: cobranca.qrCodeBase64,
-    mp_transaction_id: cobranca.asaasPaymentId, // Mantive o mesmo nome de coluna da MisticPay para reaproveitamento[cite: 1]
-  })
-  .eq('id', inscricao.id);
+      cobranca = await criarCobrancaPixComSplit({
+        customerId: asaasCustomerId,
+        valor: precoBRL,
+        descricao: `Ingresso - ${evento?.nome ?? lote.nome}`,
+        externalReference: inscricao.id,
+        carteiraOrganizadorId: estabDados?.asaas_wallet_id ?? undefined,
+      });
+
+    } catch (asaasError) {
+      await supabase.rpc('devolver_vaga', { p_lote_id: loteId });
+      await supabase.from('inscricoes').delete().eq('id', inscricao.id);
+      console.error('[checkout] Erro no Asaas:', asaasError);
+      return NextResponse.json({ error: 'Erro ao gerar cobrança.' }, { status: 502 });
+    }
+
+    // ── 10. Salva os dados do Pix na inscrição ────────────────────────────────
+    const { error: updateError } = await supabase
+      .from('inscricoes')
+      .update({
+        txid_pix: cobranca.copyPaste,
+        qr_code_base64: cobranca.qrCodeBase64,
+        mp_transaction_id: cobranca.asaasPaymentId,
+      })
+      .eq('id', inscricao.id);
+
+    if (updateError) {
+      // A cobrança JÁ FOI CRIADA no Asaas — não estorna aqui, apenas loga
+      // para reconciliação manual (o webhook ainda vai confirmar o pagamento).
+      console.error(`[checkout] Falha ao salvar QR Code na inscrição ${inscricao.id}:`, updateError);
+    }
 
     // ── 11. Retorna para o front redirecionar ─────────────────────────────────
     return NextResponse.json({
-      success:      true,
-      inscricaoId:  inscricao.id,
+      success: true,
+      inscricaoId: inscricao.id,
     }, { status: 201 });
 
   } catch (error) {

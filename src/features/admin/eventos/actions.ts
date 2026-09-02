@@ -5,6 +5,7 @@ import { revalidatePath } from 'next/cache';
 import { cookies } from 'next/headers';
 import { getSupabaseAdmin } from '@/src/config/supabase';
 import { createSupabaseServerClient } from '@/src/config/supabase-server';
+import { exigirDonoOuAdmin } from '@/src/features/admin/configuracoes/actions';
 
 interface LoteInput {
   nome: string;
@@ -39,46 +40,9 @@ interface EventoInput {
   atracoes?: AtividadeInput[];
 }
 
-// ─── Helper interno para pegar o estabelecimento ativo ou global ───
-async function getEstabelecimentoAtivo() {
-  const supabaseAuth = await createSupabaseServerClient();
-  const { data: { user } } = await supabaseAuth.auth.getUser();
-
-  if (!user) {
-    throw new Error('Você precisa estar logado.');
-  }
-
-  const { data: profile, error: profileError } = await supabaseAuth
-    .from('profiles')
-    .select('estabelecimento_id, role')
-    .eq('id', user.id)
-    .single();
-
-  if (profileError || !profile) {
-    throw new Error('Não foi possível carregar seu perfil.');
-  }
-
-  const isSuperAdmin = profile.role === 'super_admin';
-  const cookieStore = await cookies();
-  const cookieEstabelecimento = cookieStore.get('admin_estabelecimento_id')?.value;
-
-  const isGlobal = isSuperAdmin && cookieEstabelecimento === 'Todos';
-
-  const estabelecimentoId = isSuperAdmin && cookieEstabelecimento && cookieEstabelecimento !== 'Todos'
-    ? cookieEstabelecimento
-    : profile.estabelecimento_id;
-
-  return {
-    userId: user.id,
-    role: profile.role,
-    isSuperAdmin,
-    isGlobal,
-    estabelecimentoId,
-  };
-}
 
 export async function criarEventoComLotes(data: EventoInput) {
-  const { role, estabelecimentoId, isGlobal } = await getEstabelecimentoAtivo();
+  const { role, estabelecimentoId, isGlobal } = await exigirDonoOuAdmin();
 
   const papeisPermitidos = ['super_admin', 'dono_estabelecimento', 'staff_checkin'];
   if (!papeisPermitidos.includes(role)) {
@@ -168,7 +132,7 @@ export async function criarEventoComLotes(data: EventoInput) {
 }
 
 export async function deletarEvento(eventoId: string) {
-  const { role, estabelecimentoId } = await getEstabelecimentoAtivo();
+  const { role, estabelecimentoId } = await exigirDonoOuAdmin();
 
   const papeisPermitidos = ['super_admin', 'dono_estabelecimento'];
   if (!papeisPermitidos.includes(role)) {
@@ -209,7 +173,7 @@ export async function deletarEvento(eventoId: string) {
 }
 
 export async function buscarEvento(eventoId: string) {
-  const { role, estabelecimentoId } = await getEstabelecimentoAtivo();
+  const { role, estabelecimentoId } = await exigirDonoOuAdmin();
 
   const supabase = getSupabaseAdmin();
   const { data: evento, error } = await supabase
@@ -250,7 +214,7 @@ interface EventoUpdateInput {
 }
 
 export async function atualizarEvento(eventoId: string, data: EventoUpdateInput) {
-  const { role, estabelecimentoId } = await getEstabelecimentoAtivo();
+  const { role, estabelecimentoId } = await exigirDonoOuAdmin();
 
   const papeisPermitidos = ['super_admin', 'dono_estabelecimento', 'staff_checkin'];
   if (!papeisPermitidos.includes(role)) {
@@ -328,7 +292,7 @@ export async function atualizarEvento(eventoId: string, data: EventoUpdateInput)
 }
 
 export async function listarEventos() {
-  const { estabelecimentoId, isGlobal } = await getEstabelecimentoAtivo();
+  const { estabelecimentoId, isGlobal } = await exigirDonoOuAdmin();
 
   const supabase = getSupabaseAdmin();
   let query = supabase

@@ -20,7 +20,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     .eq('id', user.id)
     .single();
 
-  const papeisPermitidos = ['super_admin', 'dono_estabelecimento', 'staff_checkin', 'cliente'];
+  const papeisPermitidos = ['super_admin', 'dono_estabelecimento', 'staff_checkin'];
 
   if (!profile || !papeisPermitidos.includes(profile.role)) {
     redirect('/');
