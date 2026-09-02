@@ -21,7 +21,6 @@ const TABS: { id: Tab; label: string; icon: React.ElementType }[] = [
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function CertificadosPage() {
-    // Iniciando na aba 'regras' por ser a primeira da lista, mas você pode voltar para 'design' se preferir
     const [tab, setTab] = useState<Tab>('regras');
     const [template, setTemplate] = useState<TemplateConfig>(TEMPLATE_DEFAULT);
 
@@ -30,19 +29,19 @@ export default function CertificadosPage() {
     }
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-6 max-w-7xl mx-auto pb-10">
 
-            {/* Cabeçalho */}
+            {/* Cabeçalho alinhado ao padrão do Dashboard */}
             <div>
-                <h1 className="text-xl font-bold text-foreground">Certificados</h1>
-                <p className="text-sm text-muted mt-0.5">
+                <h1 className="text-2xl font-bold text-foreground tracking-tight">Certificados</h1>
+                <p className="text-sm text-muted mt-1">
                     Configure as regras, o template visual e emita certificados em lote para os participantes.
                 </p>
             </div>
 
-            {/* Tabs */}
+            {/* Navegação de Tabs Refinada */}
             <div className="border-b border-border">
-                <div className="flex gap-1 -mb-px">
+                <nav className="flex gap-6 -mb-px overflow-x-auto hide-scrollbar" aria-label="Tabs">
                     {TABS.map(({ id, label, icon: Icon }) => {
                         const active = tab === id;
                         return (
@@ -51,31 +50,27 @@ export default function CertificadosPage() {
                                 type="button"
                                 onClick={() => setTab(id)}
                                 className={`
-                                  flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors
-                                  ${active
+                  flex items-center gap-2 py-3 px-1 text-sm font-semibold border-b-2 transition-all whitespace-nowrap outline-none
+                  ${active
                                         ? 'border-primary text-primary'
-                                        : 'border-transparent text-muted hover:text-foreground hover:border-border'
+                                        : 'border-transparent text-muted hover:text-foreground hover:border-border/60'
                                     }
-                                `}
+                `}
+                                aria-current={active ? 'page' : undefined}
                             >
-                                <Icon size={15} />
+                                <Icon size={16} className={active ? 'text-primary' : 'text-muted-subtle'} />
                                 {label}
                             </button>
                         );
                     })}
-                </div>
+                </nav>
             </div>
-
-            {/* Conteúdo */}
-            {tab === 'regras' && (
-                <RegrasEmissao />
-            )}
-            {tab === 'design' && (
-                <TemplateStudio config={template} onChange={updateTemplate} />
-            )}
-            {tab === 'emissao' && (
-                <PainelEmissao />
-            )}
+            {/* Área de Conteúdo */}
+            <div className="pt-2 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                {tab === 'regras' && <RegrasEmissao />}
+                {tab === 'design' && <TemplateStudio config={template} onChange={updateTemplate} />}
+                {tab === 'emissao' && <PainelEmissao />}      
+            </div>
         </div>
     );
 }

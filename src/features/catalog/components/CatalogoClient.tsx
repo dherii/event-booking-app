@@ -57,7 +57,7 @@ export function CatalogoClient({ eventos, favoritosIds = [] }: { eventos: Evento
   const searchParams = useSearchParams();
   const [filtro, setFiltro] = useState('Tudo');
   const [ordem, setOrdem] = useState<'recentes' | 'proximos' | 'baratos'>('recentes');
-  
+
   // Estados para geolocalização do usuário
   const [localizacaoUsuario, setLocalizacaoUsuario] = useState<{ lat: number; lon: number } | null>(null);
   const [carregandoLocal, setCarregandoLocal] = useState(false);
@@ -147,18 +147,21 @@ export function CatalogoClient({ eventos, favoritosIds = [] }: { eventos: Evento
   }, [eventos, filtro, busca, ordem, localizacaoUsuario]);
 
   function IconeFiltro({ categoria }: { categoria: string }) {
-    if (categoria === 'Hoje') return <CalendarDays size={16} />;
-    if (categoria === 'Universitário') return <GraduationCap size={16} />;
-    if (categoria === 'Pub / Bar') return <Beer size={16} />;
-    if (categoria === 'Festa') return <Home size={16} />;
-    if (categoria === 'Perto de mim') return <Navigation size={16} />;
-    return null;
+  const iconProps = { size: 15 };  
+  switch (categoria) {
+    case 'Hoje': return <CalendarDays {...iconProps} />;
+    case 'Universitário': return <GraduationCap {...iconProps} />;
+    case 'Pub / Bar': return <Beer {...iconProps} />;
+    case 'Festa': return <Home {...iconProps} />;
+    case 'Perto de mim': return <Navigation {...iconProps} />;
+    default: return null;
   }
+}
 
   return (
-    <div className="space-y-8">
-      {/* Filtros em Pílulas (Chips) */}
-      <div className="-mx-1 flex gap-2.5 overflow-x-auto px-1 pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+    <div className="space-y-6 sm:space-y-8">
+      {/* Filtros — pílulas roláveis full-bleed no mobile, abas com sublinhado no desktop */}
+      <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:mx-0 sm:gap-1 sm:overflow-visible sm:border-b sm:border-border sm:px-0 sm:pb-0">
         {categorias.map((cat) => {
           const ativo = filtro === cat;
           return (
@@ -166,10 +169,10 @@ export function CatalogoClient({ eventos, favoritosIds = [] }: { eventos: Evento
               key={cat}
               onClick={() => lidarComCliqueFiltro(cat)}
               disabled={cat === 'Perto de mim' && carregandoLocal}
-              className={`flex shrink-0 items-center gap-2 rounded-2xl border px-4.5 py-3 text-sm font-bold whitespace-nowrap transition-all shadow-sm ${
+              className={`flex min-h-11 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border px-4 text-sm font-medium transition-colors sm:min-h-0 sm:rounded-none sm:border-0 sm:border-b-2 sm:px-2.5 sm:py-2.5 sm:text-[13px] ${
                 ativo
-                  ? 'border-transparent bg-primary text-primary-fg shadow-neon scale-105'
-                  : 'border-border/80 bg-card/80 text-muted hover:border-primary/40 hover:bg-card hover:text-foreground'
+                  ? 'border-primary bg-primary text-primary-fg sm:border-primary sm:bg-transparent sm:text-foreground'
+                  : 'border-border bg-card text-muted hover:border-input-border-hover hover:text-foreground sm:border-transparent sm:bg-transparent sm:hover:border-transparent'
               }`}
             >
               <IconeFiltro categoria={cat} />
@@ -180,49 +183,48 @@ export function CatalogoClient({ eventos, favoritosIds = [] }: { eventos: Evento
       </div>
 
       {/* Cabeçalho de Resultados e Ordenação */}
-      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 border-b border-border/60 pb-4">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <h2 className="flex items-center gap-2.5 text-2xl font-black text-foreground tracking-tight">
-            <Zap size={22} className="fill-primary text-primary" />
+          <h2 className="flex items-center gap-2 text-xl font-semibold tracking-tight text-foreground">
+            <Zap size={18} className="text-primary" />
             {busca ? `Resultados para "${searchParams.get('q')}"` : 'Seu próximo evento começa aqui'}
           </h2>
           {!busca && <p className="mt-1 text-sm text-muted">Encontre eventos acadêmicos e viva novas experiências.</p>}
         </div>
 
-        <div className="flex items-center gap-3.5">
-          <div className="relative">
-            <ArrowUpDown size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-subtle pointer-events-none" />
+        <div className="flex items-center gap-2">
+          <div className="relative flex-1 sm:flex-none">
+            <ArrowUpDown size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-subtle pointer-events-none" />
             <select
               value={ordem}
               onChange={(e) => setOrdem(e.target.value as typeof ordem)}
-              className="appearance-none bg-card border border-border/80 rounded-xl pl-8 pr-8 py-2 text-xs font-semibold text-muted focus:border-primary outline-none cursor-pointer shadow-sm"
-            >
+              className="h-9 w-full appearance-none rounded-lg border border-border bg-card pl-8 pr-8 text-xs font-medium text-muted focus:border-input-border-focus outline-none cursor-pointer sm:w-auto">
               <option value="recentes">Mais recentes</option>
               <option value="proximos">Data mais próxima</option>
               <option value="baratos">Mais baratos</option>
             </select>
           </div>
-          <span className="text-xs font-bold text-muted bg-card px-3 py-2 rounded-xl border border-border/60 shadow-sm whitespace-nowrap">
+          <span className="h-9 hidden shrink-0 items-center rounded-lg border border-border bg-card px-4 text-xs font-medium text-muted sm:inline-flex">
             {eventosFiltrados.length} {eventosFiltrados.length === 1 ? 'evento' : 'eventos'}
           </span>
         </div>
       </div>
 
-      {/* Grid de Eventos */}
+      {/* Grid de Eventos — colunas mais largas para acomodar o card horizontal */}
       {eventosFiltrados.length === 0 ? (
-        <div className="glass-card-premium flex min-h-[300px] items-center justify-center rounded-3xl border-dashed text-center p-8">
+        <div className="glass-card-premium flex min-h-[280px] items-center justify-center rounded-2xl border-dashed text-center p-8">
           <div>
-            <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10 text-primary shadow-sm">
-              <Zap size={24} />
+            <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 text-primary">
+              <Zap size={22} />
             </div>
-            <p className="text-base font-bold text-foreground">
+            <p className="text-base font-semibold text-foreground">
               {busca ? 'Nenhum evento encontrado para esta busca.' : 'Nenhum evento encontrado com este filtro.'}
             </p>
             <p className="mt-1 text-xs text-muted">Tente buscar por outro termo ou categoria.</p>
           </div>
         </div>
       ) : (
-        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-5 xl:grid-cols-3 xl:gap-6">
           {eventosFiltrados.map((evento) => {
             // Se o usuário clicou em "Perto de mim", podemos calcular a distância e mostrar no card
             let distanciaTexto = null;
@@ -232,10 +234,10 @@ export function CatalogoClient({ eventos, favoritosIds = [] }: { eventos: Evento
             }
 
             return (
-              <div key={evento.id} className="flex flex-col">
+              <div key={evento.id} className="flex flex-col gap-1.5">
                 <CardEvento evento={evento} favoritadoInicial={favoritosIds.includes(evento.id)} />
                 {distanciaTexto && (
-                  <span className="mt-1.5 text-xs font-medium text-primary px-1">
+                  <span className="px-1 text-xs font-medium text-primary">
                     📍 {distanciaTexto}
                   </span>
                 )}

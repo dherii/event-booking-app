@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { ChevronLeft, ChevronRight, Calendar, MapPin, ArrowRight, Sparkles } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Calendar, MapPin, ArrowRight } from 'lucide-react';
 
 interface EventoBanner {
   id: string;
@@ -39,15 +39,15 @@ export function BannerCarrossel({ eventos, fullBleed = false }: BannerCarrosselP
   return (
     <div
       className={`relative w-full overflow-hidden bg-card group ${
-        fullBleed ? '' : 'rounded-2xl shadow-2xl border border-border/80'
+        fullBleed ? '' : 'rounded-2xl shadow-card border border-border'
       }`}
     >
-      {/* Container com proporção responsiva e ajuste automático de imagem */}
+      {/* Container com proporção responsiva */}
       <div
         className={`relative w-full overflow-hidden ${
           fullBleed
             ? 'h-[340px] sm:h-[440px] md:h-[540px] lg:h-[620px]'
-            : 'h-[240px] sm:h-[360px] md:h-[420px]'
+            : 'h-[280px] sm:h-[360px] md:h-[420px]' // Aumentei levemente a altura base do mobile para dar mais respiro
         }`}
       >
         <Image
@@ -57,33 +57,32 @@ export function BannerCarrossel({ eventos, fullBleed = false }: BannerCarrosselP
           priority
           className="object-cover object-center transition-transform duration-700 ease-in-out group-hover:scale-105"
         />
-        {/* Gradiente escuro sobre a imagem para destacar os textos */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-black/10" />
 
-        {/* Selo da seção — estilo consistente com os outros badges do site (fundo escuro translúcido),
-            funciona bem em cima de qualquer imagem sem precisar adaptar cor por banner */}
-        <div className="absolute left-4 top-4 sm:left-5 sm:top-5 flex items-center gap-1.5 rounded-full border border-white/15 bg-black/55 px-3 py-1.5 backdrop-blur-md shadow-sm">
-          <Sparkles size={13} className="text-primary shrink-0" />
-          <span className="text-[10px] font-bold uppercase tracking-wider text-white">Destaques da Semana</span>
+        {/* Overlay cinemático escuro: cobre mais área (via-70%) e protege o texto no mobile */}
+        <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/70 to-transparent pointer-events-none z-0" />
+
+        {/* Selo da seção usando a classe .glass */}
+        <div className="absolute left-4 top-4 sm:left-5 sm:top-5 flex items-center gap-1.5 rounded-full glass px-3 py-1.5 shadow-sm z-10">
+          <span className="text-[10px] font-bold uppercase tracking-wider text-foreground">
+            Destaques da Semana
+          </span>
         </div>
       </div>
 
-      {/* Conteúdo Informativo sobre o Banner — alinhado à mesma grade do restante da página */}
+      {/* Conteúdo Informativo sobre o Banner */}
       <div
-        className={`absolute bottom-0 left-0 right-0 text-white flex flex-col sm:flex-row sm:items-end justify-between gap-4 ${
+        className={`absolute bottom-0 left-0 right-0 flex flex-col sm:flex-row sm:items-end justify-between gap-5 z-10 ${
           fullBleed
             ? 'mx-auto max-w-7xl px-4 py-6 sm:px-6 sm:py-9 lg:px-8 lg:py-12'
             : 'p-5 sm:p-8'
         }`}
       >
-        <div className="space-y-2.5 max-w-xl">
-          <span className="inline-flex items-center px-3.5 py-1 rounded-full bg-primary text-primary-fg text-[10px] sm:text-xs font-black uppercase tracking-wider shadow-neon">
-            Destaque
-          </span>
-          <h2 className="text-2xl sm:text-3xl md:text-4xl font-black tracking-tight drop-shadow-md text-white line-clamp-2">
+        <div className="space-y-3 max-w-xl">
+          {/* Texto forçado para branco para garantir contraste com o gradiente escuro */}
+          <h2 className="text-3xl sm:text-4xl md:text-5xl font-black tracking-tight text-white line-clamp-2">
             {eventoAtivo.titulo}
           </h2>
-          <div className="flex flex-wrap items-center gap-4 text-xs sm:text-sm text-slate-200 font-medium">
+          <div className="flex flex-wrap items-center gap-4 text-xs sm:text-sm text-zinc-300 font-medium">
             <span className="flex items-center gap-1.5">
               <Calendar size={15} className="text-primary" />
               {eventoAtivo.data}
@@ -97,19 +96,19 @@ export function BannerCarrossel({ eventos, fullBleed = false }: BannerCarrosselP
 
         <Link
           href={eventoAtivo.linkHref}
-          className="flex items-center justify-center gap-2 px-5 py-3 rounded-2xl bg-primary text-primary-fg text-xs sm:text-sm font-black uppercase tracking-wider hover:bg-primary-hover transition-all shadow-neon text-center shrink-0 active:scale-[0.98]"
+          className="clubber-button shrink-0 !text-white w-full sm:w-auto"
         >
           Garantir Ingresso
           <ArrowRight size={16} strokeWidth={2.5} />
         </Link>
       </div>
 
-      {/* Botões de Navegação Manual (Aparecem ao passar o mouse) */}
+      {/* Botões de Navegação Manual */}
       {eventos.length > 1 && (
         <>
           <button
             onClick={() => setIndiceAtual((prev) => (prev === 0 ? eventos.length - 1 : prev - 1))}
-            className={`absolute top-1/2 -translate-y-1/2 flex h-10 w-10 items-center justify-center rounded-full border border-white/20 bg-black/50 text-white opacity-0 group-hover:opacity-100 transition-all hover:bg-black/70 hover:scale-105 cursor-pointer backdrop-blur-md shadow-lg ${
+            className={`absolute top-1/2 -translate-y-1/2 flex h-10 w-10 items-center justify-center rounded-full glass text-foreground opacity-0 group-hover:opacity-100 transition-all hover:scale-105 cursor-pointer shadow-sm z-10 ${
               fullBleed ? 'left-4 sm:left-8' : 'left-4'
             }`}
             aria-label="Anterior"
@@ -118,7 +117,7 @@ export function BannerCarrossel({ eventos, fullBleed = false }: BannerCarrosselP
           </button>
           <button
             onClick={() => setIndiceAtual((prev) => (prev + 1) % eventos.length)}
-            className={`absolute top-1/2 -translate-y-1/2 flex h-10 w-10 items-center justify-center rounded-full border border-white/20 bg-black/50 text-white opacity-0 group-hover:opacity-100 transition-all hover:bg-black/70 hover:scale-105 cursor-pointer backdrop-blur-md shadow-lg ${
+            className={`absolute top-1/2 -translate-y-1/2 flex h-10 w-10 items-center justify-center rounded-full glass text-foreground opacity-0 group-hover:opacity-100 transition-all hover:scale-105 cursor-pointer shadow-sm z-10 ${
               fullBleed ? 'right-4 sm:right-8' : 'right-4'
             }`}
             aria-label="Próximo"
@@ -126,9 +125,9 @@ export function BannerCarrossel({ eventos, fullBleed = false }: BannerCarrosselP
             <ChevronRight size={20} />
           </button>
 
-          {/* Indicadores de bolinhas (Pagination Dots) */}
+          {/* Indicadores (Pagination Dots) */}
           <div
-            className={`absolute top-4 flex items-center gap-1.5 bg-black/50 px-3 py-2 rounded-full backdrop-blur-md border border-white/10 shadow-lg ${
+            className={`absolute top-4 flex items-center gap-2 glass px-3 py-2 rounded-full shadow-sm z-10 ${
               fullBleed ? 'right-4 sm:right-8' : 'right-4'
             }`}
           >
@@ -137,7 +136,7 @@ export function BannerCarrossel({ eventos, fullBleed = false }: BannerCarrosselP
                 key={idx}
                 onClick={() => setIndiceAtual(idx)}
                 className={`h-2 rounded-full transition-all cursor-pointer ${
-                  idx === indiceAtual ? 'bg-primary w-6' : 'bg-white/50 w-2 hover:bg-white'
+                  idx === indiceAtual ? 'bg-primary w-6' : 'bg-foreground/30 hover:bg-foreground/60 w-2'
                 }`}
                 aria-label={`Ir para slide ${idx + 1}`}
               />

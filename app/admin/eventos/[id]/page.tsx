@@ -1,21 +1,8 @@
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import {
-  ArrowLeft,
-  MapPin,
-  CalendarDays,
-  Clock,
-  Ticket,
-  UtensilsCrossed,
-  Crown,
-  Building2,
-  ShieldCheck,
-  Zap,
-  QrCode,
-  Compass,
-  Users,
-  Sparkles,
-  BookOpen,
+  ArrowLeft, MapPin, CalendarDays, Clock, Ticket, UtensilsCrossed, Crown,
+  Building2, ShieldCheck, Zap, QrCode, Compass, Users, Sparkles, BookOpen,
 } from 'lucide-react';
 import { createSupabaseServerClient } from '@/src/config/supabase-server';
 import BotaoComprarLote from '@/src/features/catalog/components/BotaoComprarLote';
@@ -35,11 +22,7 @@ function fmtDataBadge(iso: string) {
 }
 
 function fmtDataCompleta(iso: string) {
-  return new Date(iso).toLocaleDateString('pt-BR', {
-    day: '2-digit',
-    month: 'long',
-    year: 'numeric',
-  });
+  return new Date(iso).toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' });
 }
 
 function fmtHora(iso: string) {
@@ -81,57 +64,48 @@ export default async function EventoPage({ params }: EventoPageProps) {
   if (!evento) notFound();
 
   const lotes: Array<{
-    id: string;
-    nome: string;
-    preco: number;
-    tipo: string;
-    capacidade_pessoas: number | null;
-    quantidade_disponivel: number;
+    id: string; nome: string; preco: number; tipo: string;
+    capacidade_pessoas: number | null; quantidade_disponivel: number;
   }> = evento.lotes ?? [];
 
   const primeiroLote = lotes[0];
 
   const atividades: Array<{
-    id: string;
-    titulo: string;
-    descricao?: string | null;
-    local_sala?: string | null;
-    data_horario?: string | null;
-    vagas_totais: number;
-    vagas_disponiveis: number;
+    id: string; titulo: string; descricao?: string | null;
+    local_sala?: string | null; data_horario?: string | null;
+    vagas_totais: number; vagas_disponiveis: number;
   }> = evento.atividades ?? [];
 
   const dateBadge = fmtDataBadge(evento.data_inicio);
 
   return (
-    <main className="min-h-screen bg-background text-foreground bg-grid-pattern relative pb-28 lg:pb-16">
-      {/* Luzes difusas ambientais */}
-      <div className="ambient-glow left-10 top-20" />
-      <div className="ambient-glow right-10 top-96" />
+    <main className="min-h-screen bg-background text-foreground bg-grid-pattern relative pb-28 lg:pb-16">      
+      {/* Luzes difusas ambientais - Ajustadas para a nova paleta */}
+      <div className="absolute w-[400px] h-[400px] bg-primary/5 rounded-full blur-[100px] left-10 top-20 pointer-events-none" />
+      <div className="absolute w-[300px] h-[300px] bg-primary/5 rounded-full blur-[80px] right-10 top-96 pointer-events-none" />
 
       {/* Header Fixo / Barra Superior */}
-      <header className="sticky top-0 z-30 bg-background/80 backdrop-blur-md border-b border-border/80">
+      <header className="sticky top-0 z-30 bg-background/80 backdrop-blur-md border-b border-border">
         <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
           <Link
-            href="/"
+            href="/admin/eventos"
             className="inline-flex items-center gap-2 text-xs font-black uppercase tracking-wider text-muted hover:text-foreground transition-colors"
           >
             <ArrowLeft size={16} />
-            <span className="hidden sm:inline">Voltar ao catálogo</span>
+            <span className="hidden sm:inline">Voltar para Eventos</span>
           </Link>
-
           <BotaoCompartilhar eventoNome={evento.nome} eventoId={evento.id} />
         </div>
       </header>
 
       <div className="max-w-6xl mx-auto px-4 pt-6 sm:pt-10 relative">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-          
+
           {/* Coluna Principal da Esquerda */}
           <div className="lg:col-span-7 space-y-6">
-            
+
             {/* Banner Principal com Glassmorphism e Badges */}
-            <div className="relative w-full aspect-[16/9] rounded-3xl overflow-hidden border border-border/80 shadow-2xl bg-card">
+            <div className="relative w-full aspect-[16/9] rounded-3xl overflow-hidden border border-border shadow-card bg-card">
               {evento.banner_url ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
@@ -140,34 +114,34 @@ export default async function EventoPage({ params }: EventoPageProps) {
                   className="w-full h-full object-cover transition-transform duration-700 hover:scale-105"
                 />
               ) : (
-                <div className="w-full h-full bg-gradient-to-br from-accent-purple/40 via-card to-accent-pink/40 flex items-center justify-center p-6 text-white text-center">
+                <div className="w-full h-full bg-gradient-to-br from-primary/20 via-background to-primary/5 flex items-center justify-center p-6 text-foreground text-center">
                   <h2 className="text-2xl font-black">{evento.nome}</h2>
                 </div>
               )}
 
-              <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-black/10" />
+              <div className="absolute inset-0 bg-gradient-to-t from-background/95 via-background/40 to-transparent pointer-events-none" />
 
               {/* Data Badge */}
-              <div className="absolute top-4 left-4 min-w-[56px] rounded-2xl border border-white/15 bg-black/60 px-2.5 py-2 text-center leading-none backdrop-blur-md shadow-sm">
+              <div className="absolute top-4 left-4 min-w-[56px] rounded-2xl border border-border glass px-2.5 py-2 text-center leading-none shadow-sm">
                 <span className="block text-xs font-black text-primary">{dateBadge.dia}</span>
-                <span className="block mt-1 text-[10px] font-extrabold text-white">{dateBadge.mes}</span>
+                <span className="block mt-1 text-[10px] font-extrabold text-foreground">{dateBadge.mes}</span>
               </div>
 
               {/* Informações sobrepostas */}
-              <div className="absolute bottom-5 left-5 right-5 text-white space-y-2">
+              <div className="absolute bottom-5 left-5 right-5 text-foreground space-y-2">
                 {evento.categoria && (
-                  <span className="inline-block rounded-full border border-white/20 bg-primary px-3 py-1 text-[10px] font-black uppercase tracking-wider shadow-neon">
+                  <span className="inline-block rounded-full border border-border bg-card px-3 py-1 text-[10px] font-black uppercase tracking-wider shadow-sm">
                     {evento.categoria}
                   </span>
                 )}
-                <h1 className="text-xl sm:text-3xl font-black leading-tight drop-shadow-md text-white">
+                <h1 className="text-xl sm:text-3xl font-black leading-tight drop-shadow-md text-foreground">
                   {evento.nome}
                 </h1>
               </div>
             </div>
 
             {/* Grid de Informações Rápidas (Data, Hora, Local) Refinado */}
-            <div className="glass-card-premium rounded-3xl p-5 shadow-card grid grid-cols-3 gap-3 text-center divide-x divide-border/60">
+            <div className="clubber-card rounded-3xl p-5 grid grid-cols-3 gap-3 text-center divide-x divide-border">
               <div className="flex flex-col items-center justify-center p-1 group transition-colors">
                 <div className="w-8 h-8 rounded-xl bg-primary/10 text-primary flex items-center justify-center mb-1.5 group-hover:scale-110 transition-transform">
                   <CalendarDays size={16} />
@@ -198,7 +172,7 @@ export default async function EventoPage({ params }: EventoPageProps) {
 
             {/* Descrição do Evento */}
             {evento.descricao && (
-              <div className="glass-card-premium rounded-3xl p-6 sm:p-8 shadow-card space-y-3">
+              <div className="clubber-card rounded-3xl p-6 sm:p-8 space-y-3">
                 <h3 className="text-base font-black text-foreground">Sobre o evento</h3>
                 <p className="text-muted text-sm leading-relaxed whitespace-pre-line font-medium">
                   {evento.descricao}
@@ -208,7 +182,7 @@ export default async function EventoPage({ params }: EventoPageProps) {
 
             {/* Atividades / Programação */}
             {atividades.length > 0 && (
-              <div className="glass-card-premium rounded-3xl p-6 sm:p-8 shadow-card space-y-4">
+              <div className="clubber-card rounded-3xl p-6 sm:p-8 space-y-4">
                 <h3 className="flex items-center gap-2.5 text-base font-black text-foreground">
                   <BookOpen size={18} className="text-primary" />
                   Programação de Oficinas & Atividades
@@ -223,15 +197,15 @@ export default async function EventoPage({ params }: EventoPageProps) {
                         key={atv.id}
                         className={`p-4 rounded-2xl border transition-all ${
                           esgotada
-                            ? 'bg-background-secondary/50 border-border opacity-70'
-                            : 'bg-background-secondary border-border/80 hover:border-primary/40'
+                            ? 'bg-background-secondary border-border opacity-60'
+                            : 'bg-card border-border hover:border-primary/40'
                         }`}
                       >
                         <div className="flex items-start justify-between gap-3">
-                          <div className="space-y-1">
+                          <div className="space-y-1 min-w-0">
                             <h4 className="text-sm font-bold text-foreground">{atv.titulo}</h4>
                             {atv.local_sala && (
-                              <p className="text-xs text-muted font-medium flex items-center gap-1.5">
+                              <p className="text-xs text-muted font-medium flex items-center gap-1.5 truncate">
                                 <Building2 size={13} className="text-primary shrink-0" />
                                 {atv.local_sala}
                               </p>
@@ -264,11 +238,11 @@ export default async function EventoPage({ params }: EventoPageProps) {
               </div>
             )}
 
-            {/* Destaques / Benefícios com hover refinado */}
-            <div className="glass-card-premium rounded-3xl p-6 sm:p-8 shadow-card space-y-4">
+            {/* Destaques / Benefícios */}
+            <div className="clubber-card rounded-3xl p-6 sm:p-8 space-y-4">
               <h3 className="text-base font-black text-foreground">O que você vai encontrar</h3>
               <div className="grid grid-cols-3 gap-3">
-                <div className="bg-background-secondary rounded-2xl p-4 border border-border/80 flex flex-col items-center text-center transition-all hover:border-primary/40 hover:-translate-y-1">
+                <div className="bg-background-secondary rounded-2xl p-4 border border-border flex flex-col items-center text-center transition-all hover:border-primary/40 hover:-translate-y-1">
                   <div className="w-10 h-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center mb-2.5 shadow-sm">
                     <Compass size={18} />
                   </div>
@@ -277,7 +251,7 @@ export default async function EventoPage({ params }: EventoPageProps) {
                   </span>
                 </div>
 
-                <div className="bg-background-secondary rounded-2xl p-4 border border-border/80 flex flex-col items-center text-center transition-all hover:border-primary/40 hover:-translate-y-1">
+                <div className="bg-background-secondary rounded-2xl p-4 border border-border flex flex-col items-center text-center transition-all hover:border-primary/40 hover:-translate-y-1">
                   <div className="w-10 h-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center mb-2.5 shadow-sm">
                     <Users size={18} />
                   </div>
@@ -286,7 +260,7 @@ export default async function EventoPage({ params }: EventoPageProps) {
                   </span>
                 </div>
 
-                <div className="bg-background-secondary rounded-2xl p-4 border border-border/80 flex flex-col items-center text-center transition-all hover:border-primary/40 hover:-translate-y-1">
+                <div className="bg-background-secondary rounded-2xl p-4 border border-border flex flex-col items-center text-center transition-all hover:border-primary/40 hover:-translate-y-1">
                   <div className="w-10 h-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center mb-2.5 shadow-sm">
                     <Sparkles size={18} />
                   </div>
@@ -298,9 +272,9 @@ export default async function EventoPage({ params }: EventoPageProps) {
             </div>
           </div>
 
-          {/* Sidebar Desktop (Ingressos e Lotes) com detalhe superior em destaque */}
+          {/* Sidebar Desktop (Ingressos e Lotes) */}
           <div className="hidden lg:block lg:col-span-5 lg:sticky lg:top-24 space-y-4">
-            <div className="glass-card-premium rounded-3xl p-6 sm:p-8 border-t-2 border-primary/60 border-x border-b border-border/85 shadow-2xl space-y-6">
+            <div className="clubber-card rounded-3xl p-6 sm:p-8 space-y-6 border-t-2 border-t-primary border-x border-b">
               <div>
                 <h2 className="text-lg font-black text-foreground">Ingressos e Reservas</h2>
                 <p className="text-xs text-muted mt-1 font-medium">
@@ -322,7 +296,7 @@ export default async function EventoPage({ params }: EventoPageProps) {
                     return (
                       <div
                         key={lote.id}
-                        className="flex flex-col gap-3.5 bg-background border border-border/80 hover:border-primary/40 rounded-2xl p-4.5 transition-all shadow-sm"
+                        className="flex flex-col gap-3.5 bg-background border border-border hover:border-primary/40 rounded-2xl p-4.5 transition-all shadow-sm"
                       >
                         <div className="flex items-start justify-between gap-3">
                           <div className="flex items-center gap-3.5 min-w-0">
@@ -338,10 +312,10 @@ export default async function EventoPage({ params }: EventoPageProps) {
                           </div>
 
                           <div className="text-right shrink-0">
-                            <span className="text-base font-black text-primary">
+                            <span className="text-base font-black text-foreground">
                               {formatCurrency(lote.preco)}
                             </span>
-                            <span className="block text-[11px] text-muted font-medium">
+                            <span className="block text-[11px] text-muted font-medium mt-0.5">
                               {esgotado ? (
                                 <span className="text-error-fg font-bold">Esgotado</span>
                               ) : (
@@ -351,7 +325,7 @@ export default async function EventoPage({ params }: EventoPageProps) {
                           </div>
                         </div>
 
-                        <div className="pt-2 border-t border-border/60">
+                        <div className="pt-2 border-t border-border">
                           <BotaoComprarLote
                             eventoId={evento.id}
                             loteId={lote.id}
@@ -366,7 +340,7 @@ export default async function EventoPage({ params }: EventoPageProps) {
               )}
 
               {/* Selos de segurança */}
-              <div className="pt-5 border-t border-border/80 space-y-3 text-xs text-muted font-medium">
+              <div className="pt-5 border-t border-border space-y-3 text-xs text-muted font-medium">
                 <div className="flex items-center gap-2.5">
                   <ShieldCheck size={16} className="text-primary shrink-0" />
                   <span>Pagamento 100% seguro via Pix ou cartão</span>
@@ -388,28 +362,28 @@ export default async function EventoPage({ params }: EventoPageProps) {
 
       {/* Barra Inferior Fixa para Mobile */}
       {primeiroLote && (
-        <div className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-card/95 border-t border-border/80 p-4 shadow-[0_-4px_25px_rgba(0,0,0,0.12)] backdrop-blur-xl">
+        <div className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-card/95 border-t border-border p-4 shadow-[0_-4px_25px_rgba(0,0,0,0.12)] glass">
           <div className="max-w-md mx-auto flex items-center justify-between gap-4">
-            <div>
-              <span className="block text-xs font-bold text-foreground truncate max-w-[160px]">
+            <div className="min-w-0 flex-1">
+              <span className="block text-xs font-bold text-foreground truncate">
                 {primeiroLote.nome}
               </span>
-              <span className="text-[11px] text-success-fg font-bold">
+              <span className={`text-[11px] font-bold block mt-0.5 ${primeiroLote.quantidade_disponivel <= 0 ? 'text-error-fg' : 'text-success-fg'}`}>
                 {primeiroLote.quantidade_disponivel <= 0
                   ? 'Esgotado'
                   : `${primeiroLote.quantidade_disponivel} disponíveis`}
               </span>
-              <div className="text-base font-black text-primary leading-tight mt-0.5">
+              <div className="text-base font-black text-foreground leading-tight mt-0.5">
                 {formatCurrency(primeiroLote.preco)}
               </div>
             </div>
 
-            <div className="w-1/2">
+            <div className="w-[140px] shrink-0">
               <BotaoComprarLote
                 eventoId={evento.id}
                 loteId={primeiroLote.id}
                 esgotado={primeiroLote.quantidade_disponivel <= 0}
-                label="Garantir Ingresso"
+                label="Comprar"
               />
             </div>
           </div>

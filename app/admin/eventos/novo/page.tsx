@@ -13,15 +13,11 @@ import { createSupabaseBrowserClient } from '@/src/config/supabase-browser';
 
 import type { WizardState } from '@/src/features/admin/eventos/types';
 
-// ─── Configuração dos steps ───────────────────────────────────────────────────
-
 const STEPS = [
   { label: 'Evento',    description: 'Informações gerais'  },
   { label: 'Atrações',  description: 'Line-up e horários'  },
   { label: 'Ingressos', description: 'Lotes e preços'      },
 ];
-
-// ─── Estado inicial ───────────────────────────────────────────────────────────
 
 const INITIAL_STATE: WizardState = {
   evento: {
@@ -56,8 +52,6 @@ const INITIAL_STATE: WizardState = {
   },
 };
 
-// ─── Validação por step ───────────────────────────────────────────────────────
-
 function validateStep(step: number, state: WizardState): string | null {
   if (step === 0) {
     if (!state.evento.nome.trim())       return 'O nome do evento é obrigatório.';
@@ -71,22 +65,20 @@ function validateStep(step: number, state: WizardState): string | null {
     if (semNome) return 'Toda atração ou atividade precisa de um nome — ou remova a linha em branco.';
   }
   if (step === 2) {
-  if (state.lotes.lotes.length === 0) return 'Adicione ao menos um lote de ingressos.';
-  const semVagas = state.lotes.lotes.some((l) => !l.quantidade || l.quantidade < 1);
-  if (semVagas)  return 'Todos os lotes precisam ter ao menos 1 vaga.';
-  
-  const precoInvalido = state.lotes.lotes.some((l) => l.preco > 0 && l.preco < 5);
-  if (precoInvalido) return 'Lotes pagos devem custar no mínimo R$ 5,00 devido às taxas fixas de processamento do Pix.';
-  
-  const semCapacidade = state.lotes.lotes.some(
-    (l) => l.tipo !== 'ingresso' && (!l.capacidadePessoas || l.capacidadePessoas < 1)
-  );
-  if (semCapacidade) return 'Mesas e camarotes precisam informar quantas pessoas cabem.';
-}
+    if (state.lotes.lotes.length === 0) return 'Adicione ao menos um lote de ingressos.';
+    const semVagas = state.lotes.lotes.some((l) => !l.quantidade || l.quantidade < 1);
+    if (semVagas)  return 'Todos os lotes precisam ter ao menos 1 vaga.';
+
+    const precoInvalido = state.lotes.lotes.some((l) => l.preco > 0 && l.preco < 5);
+    if (precoInvalido) return 'Lotes pagos devem custar no mínimo R$ 5,00 devido às taxas fixas de processamento do Pix.';
+
+    const semCapacidade = state.lotes.lotes.some(
+      (l) => l.tipo !== 'ingresso' && (!l.capacidadePessoas || l.capacidadePessoas < 1)
+    );
+    if (semCapacidade) return 'Mesas e camarotes precisam informar quantas pessoas cabem.';
+  }
   return null;
 }
-
-// ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function NovoEventoPage() {
   const router = useRouter();
@@ -136,9 +128,7 @@ export default function NovoEventoPage() {
         const supabase = createSupabaseBrowserClient();
         const { data: { user } } = await supabase.auth.getUser();
 
-        if (!user) {
-          throw new Error('Sessão expirada — faça login novamente.');
-        }
+        if (!user) throw new Error('Sessão expirada — faça login novamente.');
 
         const file = state.evento.banner;
         const extensao = file.name.split('.').pop() ?? 'jpg';
@@ -197,12 +187,12 @@ export default function NovoEventoPage() {
   const isLastStep = step === STEPS.length - 1;
 
   return (
-    <div className="max-w-2xl mx-auto space-y-8">
+    <div className="max-w-3xl mx-auto space-y-8 pb-12">
       <div className="flex items-center gap-3">
         <button
           type="button"
           onClick={() => router.back()}
-          className="p-2 rounded-lg text-muted hover:text-foreground hover:bg-border transition-colors"
+          className="p-2 rounded-lg text-muted hover:text-foreground hover:bg-card-hover transition-colors"
           aria-label="Voltar"
         >
           <ArrowLeft size={18} />
@@ -217,9 +207,9 @@ export default function NovoEventoPage() {
 
       <WizardStepper steps={STEPS} current={step} />
 
-      <div className="bg-card border border-border rounded-2xl p-6 shadow-sm">
+      <div className="clubber-card p-6 sm:p-8">
         <div className="mb-6 pb-4 border-b border-border">
-          <h2 className="text-base font-semibold text-foreground">{STEPS[step].label}</h2>
+          <h2 className="text-lg font-semibold text-foreground">{STEPS[step].label}</h2>
           <p className="text-sm text-muted mt-0.5">{STEPS[step].description}</p>
         </div>
 
@@ -239,7 +229,7 @@ export default function NovoEventoPage() {
         )}
 
         {error && (
-          <p role="alert" className="mt-4 bg-error-bg text-error-fg text-sm px-4 py-3 rounded-lg">
+          <p role="alert" className="mt-6 bg-error-bg text-error-fg text-sm font-medium px-4 py-3 rounded-lg border border-error-fg/20">
             {error}
           </p>
         )}

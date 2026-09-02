@@ -1,0 +1,42 @@
+<svg width="500" height="200" viewBox="0 0 250 100" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <!-- Gradientes facetados com tons variados de #3366ff para criar profundidade e bordas mais escuras -->
+    <linearGradient id="facet_top" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#5282ff" />
+      <stop offset="100%" stop-color="#3366ff" />
+    </linearGradient>
+
+    <linearGradient id="facet_left" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#1d4ed8" />
+      <stop offset="100%" stop-color="#3366ff" />
+    </linearGradient>
+
+    <linearGradient id="facet_bottom" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#3366ff" />
+      <stop offset="100%" stop-color="#112266" />
+    </linearGradient>
+
+    <!-- Gradiente para o texto -->
+    <linearGradient id="text_gradient" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#1d4ed8" />
+      <stop offset="100%" stop-color="#3366ff" />
+    </linearGradient>
+  </defs>
+
+  <!-- SÍMBOLO (O Vértice com efeito 3D facetado) -->
+  <g transform="translate(10, 20)">
+    <!-- Forma de baixo (mais escura nas bordas) -->
+    <path d="M 0 60 L 30 30 L 60 60 Z" fill="url(#facet_bottom)"/>
+    <!-- Forma da esquerda (tom médio) -->
+    <path d="M 0 0 L 30 30 L 0 60 Z" fill="url(#facet_left)"/>
+    <!-- Forma de cima (mais iluminada) -->
+    <path d="M 0 0 L 60 0 L 30 30 Z" fill="url(#facet_top)"/>
+  </g>
+
+  <!-- LOGOTIPO (TEXTO: VERTIX) -->
+  <g transform="translate(85, 68)">
+    <text font-family="Arial, Helvetica, sans-serif" font-weight="bold" font-size="42" fill="#1a1a1a" letter-spacing="1">
+      <tspan>VERTI</tspan><tspan fill="url(#text_gradient)">X</tspan>
+    </text>
+  </g>
+</svg>

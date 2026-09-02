@@ -17,7 +17,7 @@ const STATUS_CONFIG: Record<string, { label: string; className: string }> = {
   PAGO:      { label: 'Pago',      className: 'bg-success-bg text-success-fg'  },
   PENDENTE:  { label: 'Pendente',  className: 'bg-warning-bg text-warning-fg'  },
   CANCELADO: { label: 'Cancelado', className: 'bg-error-bg text-error-fg'      },
-  CORTESIA:  { label: 'Cortesia',  className: 'bg-primary/10 text-primary'    },
+  CORTESIA:  { label: 'Cortesia',  className: 'bg-primary/10 text-primary'     },
 };
 
 function formatCurrency(v: number) {
@@ -50,30 +50,30 @@ function TransferenciaBox({
   }
 
   return (
-    <div className="bg-primary/5 border border-primary/20 rounded-lg p-3 space-y-2">
-      <p className="text-xs text-primary">
-        Envie esse link pra quem vai receber o ingresso. Ele só é transferido quando a pessoa aceitar.
+    <div className="bg-primary/5 border border-primary/20 rounded-xl p-4 space-y-3 mt-2">
+      <p className="text-sm text-primary font-medium">
+        Envie esse link pra quem vai receber o ingresso. A transferência será concluída assim que a pessoa aceitar.
       </p>
-      <div className="flex gap-2">
+      <div className="flex flex-col sm:flex-row gap-2">
         <input
           readOnly
           value={link}
-          className="flex-1 bg-background border border-border rounded-lg px-2.5 py-1.5 text-xs text-muted font-mono truncate"
+          className="input-base flex-1 font-mono text-sm truncate bg-background"
         />
         <button
           onClick={copiar}
-          className="shrink-0 flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-card hover:bg-card-hover text-xs font-medium transition-colors"
+          className="clubber-chip shrink-0 w-full sm:w-auto"
         >
-          {copiado ? <Check size={12} className="text-success-fg" /> : <Copy size={12} />}
-          {copiado ? 'Copiado' : 'Copiar'}
+          {copiado ? <Check size={16} className="text-success-fg" /> : <Copy size={16} />}
+          {copiado ? 'Copiado' : 'Copiar Link'}
         </button>
       </div>
       <button
         onClick={onCancelarTransferencia}
         disabled={cancelando}
-        className="flex items-center gap-1.5 text-xs text-muted hover:text-error-fg transition-colors disabled:opacity-50"
+        className="flex items-center justify-center sm:justify-start gap-1.5 text-sm text-muted hover:text-error-fg transition-colors disabled:opacity-50 min-h-[44px] sm:min-h-0 w-full sm:w-auto mt-2 sm:mt-0"
       >
-        {cancelando ? <Loader2 size={11} className="animate-spin" /> : <Ban size={11} />}
+        {cancelando ? <Loader2 size={14} className="animate-spin" /> : <Ban size={14} />}
         Cancelar transferência
       </button>
     </div>
@@ -132,15 +132,16 @@ export function MinhasInscricoesList({ inscricoes: initial }: { inscricoes: Minh
 
   if (inscricoes.length === 0) {
     return (
-      <div className="clubber-card flex flex-col items-center py-16 text-center border-dashed">
-        <Ticket size={32} className="text-muted-subtle mb-3" strokeWidth={1.3} />
-        <p className="text-muted">Você ainda não tem nenhuma inscrição.</p>
+      <div className="clubber-card flex flex-col items-center py-16 text-center border-dashed border-2">
+        <Ticket size={40} className="text-muted-subtle mb-4" strokeWidth={1.5} />
+        <h3 className="text-lg font-semibold text-foreground">Nenhum ingresso encontrado</h3>
+        <p className="text-muted mt-2">Você ainda não tem nenhuma inscrição ativa.</p>
       </div>
     );
   }
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-4">
       {inscricoes.map((inscricao) => {
         const Icon = ICONE_TIPO[inscricao.loteTipo] ?? Ticket;
         const cfg = STATUS_CONFIG[inscricao.status] ?? STATUS_CONFIG.PENDENTE;
@@ -150,27 +151,27 @@ export function MinhasInscricoesList({ inscricoes: initial }: { inscricoes: Minh
         const podeTransferir = ['PAGO', 'CORTESIA'].includes(inscricao.status);
 
         return (
-          <div key={inscricao.id} className="clubber-card p-5 space-y-3">
-            <div className="flex items-start justify-between gap-3">
+          <div key={inscricao.id} className="clubber-card p-5 space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
               <div className="min-w-0">
-                <p className="font-bold truncate">{inscricao.eventoNome}</p>
-                <p className="text-sm text-muted mt-0.5">{fmtData(inscricao.eventoDataInicio)}</p>
+                <h3 className="font-bold text-foreground text-lg truncate">{inscricao.eventoNome}</h3>
+                <p className="text-sm text-muted mt-1">{fmtData(inscricao.eventoDataInicio)}</p>
               </div>
-              <span className={`text-xs font-medium px-2.5 py-1 rounded-full shrink-0 ${cfg.className}`}>
+              <span className={`inline-flex items-center self-start text-xs font-semibold px-3 py-1.5 rounded-full shrink-0 ${cfg.className}`}>
                 {cfg.label}
               </span>
             </div>
 
-            <div className="flex items-center justify-between border-t border-border pt-3">
-              <div className="flex items-center gap-2 text-sm text-muted">
-                <Icon size={15} className="text-primary" />
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between border-t border-border pt-4 gap-2">
+              <div className="flex items-center gap-2 text-sm font-medium text-foreground">
+                <Icon size={16} className="text-primary" />
                 {inscricao.loteNome}
               </div>
-              <span className="event-price text-sm">{formatCurrency(inscricao.valor)}</span>
+              <span className="event-price text-base">{formatCurrency(inscricao.valor)}</span>
             </div>
 
             {erro && (
-              <p className="text-xs text-error-fg bg-error-bg rounded-lg px-3 py-2">{erro}</p>
+              <p className="text-sm text-error-fg bg-error-bg rounded-lg px-4 py-3 font-medium">{erro}</p>
             )}
 
             {inscricao.transferenciaToken && (
@@ -182,15 +183,15 @@ export function MinhasInscricoesList({ inscricoes: initial }: { inscricoes: Minh
             )}
 
             {inscricao.status !== 'CANCELADO' && !inscricao.transferenciaToken && (
-              <div className="flex gap-2 pt-1">
+              <div className="flex flex-col sm:flex-row gap-3 pt-2">
                 {podeTransferir && (
                   <button
                     onClick={() => handleSolicitarTransferencia(inscricao)}
                     disabled={transferindo}
-                    className="flex-1 flex items-center justify-center gap-2 py-2 rounded-lg border border-border text-muted text-sm font-medium hover:border-primary/50 hover:text-foreground transition-colors disabled:opacity-60"
+                    className="clubber-button flex-1"
                   >
-                    {transferindo ? <Loader2 size={14} className="animate-spin" /> : <Send size={14} />}
-                    Transferir
+                    {transferindo ? <Loader2 size={18} className="animate-spin" /> : <Send size={18} />}
+                    Transferir Ingresso
                   </button>
                 )}
 
@@ -198,16 +199,18 @@ export function MinhasInscricoesList({ inscricoes: initial }: { inscricoes: Minh
                   <button
                     onClick={() => handleCancelar(inscricao)}
                     disabled={cancelando}
-                    className="flex-1 flex items-center justify-center gap-2 py-2 rounded-lg border border-error-fg/30 text-error-fg text-sm font-medium hover:bg-error-bg transition-colors disabled:opacity-60"
+                    className="flex-1 flex items-center justify-center gap-2 min-h-[42px] px-4 rounded-lg border border-error-fg/30 text-error-fg bg-transparent hover:bg-error-bg text-sm font-semibold transition-colors disabled:opacity-60"
                   >
-                    {cancelando ? <Loader2 size={14} className="animate-spin" /> : <XCircle size={14} />}
+                    {cancelando ? <Loader2 size={16} className="animate-spin" /> : <XCircle size={16} />}
                     {cancelando ? 'Cancelando…' : 'Cancelar'}
                   </button>
                 ) : (
-                  <p className="flex-1 flex items-center gap-1.5 text-xs text-muted-subtle">
-                    <Clock size={12} />
-                    Cancelamento indisponível (menos de 48h ou prazo expirado)
-                  </p>
+                  <div className="flex-1 flex items-center justify-center sm:justify-start gap-2 min-h-[42px] px-3 py-2 bg-background-tertiary rounded-lg border border-border">
+                    <Clock size={14} className="text-muted-subtle shrink-0" />
+                    <span className="text-xs text-muted font-medium text-center sm:text-left">
+                      Cancelamento indisponível (menos de 48h ou expirado)
+                    </span>
+                  </div>
                 )}
               </div>
             )}
