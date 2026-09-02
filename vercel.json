@@ -1,5 +1,6 @@
 {
   "crons": [
-    { "path": "/api/cron/expirar-inscricoes", "schedule": "*/5 * * * *" }
+    { "path": "/api/cron/expirar-inscricoes", "schedule": "0 0 * * *" }
+    // { "path": "/api/cron/expirar-inscricoes", "schedule": "*/5 * * * *" }
   ]
 }
