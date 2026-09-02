@@ -65,16 +65,18 @@ export default async function AdminDashboardPage() {
   };
 
   return (
-    <div className="space-y-8 max-w-7xl mx-auto pb-10">
+    <div className="space-y-8 max-w-7xl mx-auto pb-10 px-4 sm:px-6 lg:px-8">
       <div>
-        <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Dashboard</h1>
-        <p className="text-sm text-slate-500 mt-1">
+        <h1 className="text-2xl font-bold text-foreground tracking-tight">Dashboard</h1>
+        <p className="text-sm text-muted mt-1">
           Visão geral e desempenho em tempo real do seu estabelecimento
         </p>
       </div>
 
       <MetricCards metrics={metrics} />
-
+      {/* Caso os componentes SalesChart e OverviewTable não renderizem o próprio .clubber-card, 
+          é recomendável envolvê-los nele para consistência. Assumindo que eles já cuidam do wrapper,
+          apenas ajustamos a grade para o sistema responsivo. */}
       <div className="grid grid-cols-1 gap-8">
         <SalesChart data={chartData} />
         <OverviewTable inscricoes={data} />

@@ -8,8 +8,6 @@ import {
 import type { EventoConcluido, HistoricoEmissao } from '../types';
 import { MOCK_EVENTOS_CONCLUIDOS, MOCK_HISTORICO } from '../types';
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
-
 function fmtData(iso: string) {
   return new Date(iso).toLocaleDateString('pt-BR', {
     day: '2-digit', month: 'long', year: 'numeric',
@@ -25,8 +23,6 @@ function fmtDataHora(iso: string) {
   );
 }
 
-// ─── Subcomponentes ───────────────────────────────────────────────────────────
-
 function MetricaCard({
   label, value, sub, icon: Icon, variant,
 }: {
@@ -37,17 +33,17 @@ function MetricaCard({
   const iconBg =
     variant === 'primary' ? 'bg-primary/10 text-primary' :
     variant === 'success' ? 'bg-success-bg text-success-fg' :
-                            'bg-border text-muted';
+    'bg-background-tertiary text-muted-subtle border border-border';
 
   return (
-    <div className="bg-background border border-border rounded-xl p-4 flex items-start gap-3">
-      <div className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${iconBg}`}>
-        <Icon size={17} strokeWidth={1.8} />
+    <div className="clubber-card p-4 flex items-start gap-3 shadow-none">
+      <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${iconBg}`}>
+        <Icon size={18} strokeWidth={2} />
       </div>
       <div>
-        <p className="text-xs text-muted">{label}</p>
-        <p className="text-xl font-bold text-foreground leading-tight">{value}</p>
-        <p className="text-[11px] text-muted mt-0.5">{sub}</p>
+        <p className="text-xs font-semibold text-muted">{label}</p>
+        <p className="text-2xl font-black text-foreground leading-tight mt-0.5">{value}</p>
+        <p className="text-[11px] font-medium text-muted-subtle mt-1">{sub}</p>
       </div>
     </div>
   );
@@ -57,9 +53,9 @@ const HISTORICO_STATUS: Record<
   HistoricoEmissao['status'],
   { label: string; icon: React.ElementType; className: string }
 > = {
-  enviado:      { label: 'Enviado',      icon: CheckCircle,  className: 'text-success-fg' },
-  processando:  { label: 'Processando',  icon: Clock,        className: 'text-warning-fg' },
-  erro:         { label: 'Erro',         icon: AlertCircle,  className: 'text-error-fg'   },
+  enviado:      { label: 'Enviado',      icon: CheckCircle,  className: 'text-success-fg bg-success-bg border-success-fg/20' },
+  processando:  { label: 'Processando',  icon: Clock,        className: 'text-warning-fg bg-warning-bg border-warning-fg/20' },
+  erro:         { label: 'Erro',         icon: AlertCircle,  className: 'text-error-fg bg-error-bg border-error-fg/20'   },
 };
 
 function CardHistorico({ item }: { item: HistoricoEmissao }) {
@@ -67,25 +63,23 @@ function CardHistorico({ item }: { item: HistoricoEmissao }) {
   const StatusIcon = cfg.icon;
 
   return (
-    <div className="flex items-center gap-4 bg-card border border-border rounded-xl px-4 py-3.5">
-      <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-        <Award size={16} className="text-primary" />
+    <div className="flex items-center gap-4 clubber-card px-4 py-4 shadow-sm hover:border-primary/30 transition-colors">
+      <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0 border border-primary/20">
+        <Award size={18} className="text-primary" />
       </div>
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-medium text-foreground truncate">{item.eventoNome}</p>
-        <p className="text-xs text-muted mt-0.5">
+        <p className="text-sm font-bold text-foreground truncate">{item.eventoNome}</p>
+        <p className="text-xs text-muted mt-0.5 font-medium">
           <strong className="text-foreground">{item.quantidade}</strong> certificados · {fmtDataHora(item.emitidoEm)}
         </p>
       </div>
-      <span className={`flex items-center gap-1.5 text-xs font-medium shrink-0 ${cfg.className}`}>
-        <StatusIcon size={13} />
-        {cfg.label}
+      <span className={`flex items-center gap-1.5 text-[11px] font-bold shrink-0 px-2.5 py-1 rounded-full border ${cfg.className}`}>
+        <StatusIcon size={12} strokeWidth={2.5} />
+        {cfg.label.toUpperCase()}
       </span>
     </div>
   );
 }
-
-// ─── Componente principal ─────────────────────────────────────────────────────
 
 export function PainelEmissao() {
   const [eventoId,   setEventoId]   = useState<string>('');
@@ -103,7 +97,6 @@ export function PainelEmissao() {
     setEmitindo(true);
     setSucesso(null);
 
-    // Simula chamada à Edge Function do Supabase
     await new Promise((r) => setTimeout(r, 2000));
 
     const novoItem: HistoricoEmissao = {
@@ -120,20 +113,19 @@ export function PainelEmissao() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 max-w-4xl">
 
-      {/* Seletor de evento */}
-      <div className="bg-card border border-border rounded-xl p-5 space-y-4">
+      <div className="clubber-card p-6 space-y-4">
         <div>
-          <p className="text-sm font-semibold text-foreground">Selecione o evento</p>
-          <p className="text-xs text-muted mt-0.5">
-            Apenas eventos com check-in encerrado aparecem aqui.
+          <p className="text-base font-bold text-foreground">Selecione o evento</p>
+          <p className="text-xs font-medium text-muted mt-0.5">
+            Apenas eventos com check-in encerrado estão disponíveis para emissão.
           </p>
         </div>
 
         <div className="relative">
           <select
-            className="input-base appearance-none pr-8 text-sm"
+            className="input-base appearance-none pr-10 font-medium"
             value={eventoId}
             onChange={(e) => { setEventoId(e.target.value); setSucesso(null); }}
           >
@@ -144,14 +136,13 @@ export function PainelEmissao() {
               </option>
             ))}
           </select>
-          <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted pointer-events-none" />
+          <ChevronDown size={16} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-muted-subtle pointer-events-none" />
         </div>
       </div>
 
-      {/* Métricas do evento selecionado */}
       {eventoSelecionado && (
-        <div className="space-y-4">
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <div className="space-y-5 animate-in fade-in slide-in-from-bottom-2 duration-300">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <MetricaCard
               label="Total de inscritos"
               value={eventoSelecionado.totalInscritos}
@@ -175,47 +166,45 @@ export function PainelEmissao() {
             />
           </div>
 
-          {/* Barra de elegibilidade */}
-          <div className="bg-card border border-border rounded-xl p-4 space-y-2">
-            <div className="flex justify-between text-xs">
-              <span className="text-muted">Elegíveis ao certificado</span>
-              <span className="font-semibold text-foreground">
+          <div className="clubber-card p-5 space-y-3">
+            <div className="flex justify-between text-sm font-semibold">
+              <span className="text-foreground">Progresso de Elegibilidade</span>
+              <span className="text-primary">
                 {eventoSelecionado.totalCheckin} de {eventoSelecionado.totalInscritos} ({pctCheckin}%)
               </span>
             </div>
-            <div className="h-2 bg-border rounded-full overflow-hidden">
+            <div className="h-2.5 bg-background-tertiary rounded-full overflow-hidden border border-border">
               <div
-                className="h-full bg-success-action rounded-full transition-all duration-700"
+                className="h-full bg-primary rounded-full transition-all duration-700 relative overflow-hidden"
                 style={{ width: `${pctCheckin}%` }}
-              />
+              >
+                <div className="absolute inset-0 bg-white/20 animate-pulse" />
+              </div>
             </div>
-            <p className="text-[11px] text-muted">
-              {eventoSelecionado.totalInscritos - eventoSelecionado.totalCheckin} inscritos sem check-in não receberão o certificado.
+            <p className="text-xs font-medium text-muted">
+              {eventoSelecionado.totalInscritos - eventoSelecionado.totalCheckin} inscritos não realizaram check-in e não receberão o certificado.
             </p>
           </div>
 
-          {/* Aviso de template */}
-          <div className="flex items-start gap-3 bg-primary/5 border border-primary/20 rounded-xl px-4 py-3.5">
-            <Award size={16} className="text-primary shrink-0 mt-0.5" />
-            <p className="text-xs text-muted leading-relaxed">
-              O certificado será gerado com o template configurado na aba <strong className="text-foreground">Design do Template</strong>. Certifique-se de salvar o template antes de emitir.
+          <div className="flex items-start gap-3 bg-primary/5 border border-primary/20 rounded-xl px-5 py-4">
+            <Award size={18} className="text-primary shrink-0 mt-0.5" />
+            <p className="text-xs font-medium text-muted leading-relaxed">
+              O certificado será gerado com o template configurado na aba <strong className="text-foreground">Design do Template</strong>. Certifique-se de salvar suas alterações antes de emitir.
             </p>
           </div>
 
-          {/* Feedback de sucesso */}
           {sucesso && (
-            <div className="flex items-center gap-3 bg-success-bg border border-success-fg/20 rounded-xl px-4 py-3.5">
-              <CheckCircle size={16} className="text-success-fg shrink-0" />
-              <p className="text-sm font-medium text-success-fg">{sucesso}</p>
+            <div className="flex items-center gap-3 bg-success-bg border border-success-fg/30 rounded-xl px-5 py-4 shadow-sm animate-in zoom-in-95 duration-300">
+              <CheckCircle size={20} className="text-success-fg shrink-0" />
+              <p className="text-sm font-bold text-success-fg">{sucesso}</p>
             </div>
           )}
 
-          {/* Botão principal */}
           <button
             type="button"
             onClick={handleEmitir}
             disabled={emitindo}
-            className="w-full flex items-center justify-center gap-3 py-4 rounded-xl bg-primary hover:bg-primary-hover text-primary-fg font-semibold text-base transition-all active:scale-[0.99] disabled:opacity-60"
+            className="clubber-button w-full py-4 text-base shadow-lg"
           >
             {emitindo ? (
               <>
@@ -225,37 +214,39 @@ export function PainelEmissao() {
             ) : (
               <>
                 <Mail size={20} />
-                Gerar e Enviar {eventoSelecionado.totalCheckin} Certificados por E-mail
+                Emitir e Enviar {eventoSelecionado.totalCheckin} Certificados
               </>
             )}
           </button>
 
-          <p className="text-center text-xs text-muted">
-            Os certificados serão enviados individualmente para o e-mail de cada aluno.
+          <p className="text-center text-xs font-medium text-muted-subtle">
+            Os certificados serão processados em background e enviados individualmente para o e-mail de cada aluno.
           </p>
         </div>
       )}
 
-      {/* Estado vazio */}
       {!eventoSelecionado && (
-        <div className="flex flex-col items-center justify-center py-16 gap-3 text-muted">
-          <Award size={36} strokeWidth={1.2} />
-          <p className="text-sm font-medium">Selecione um evento para continuar</p>
-          <p className="text-xs">As métricas de elegibilidade aparecerão aqui</p>
+        <div className="clubber-card flex flex-col items-center justify-center py-20 gap-3 border-dashed bg-background-secondary/50">
+          <Award size={40} className="text-muted-subtle" strokeWidth={1.5} />
+          <p className="text-base font-bold text-foreground">Aguardando seleção</p>
+          <p className="text-sm font-medium text-muted">Selecione um evento acima para visualizar os dados de emissão.</p>
         </div>
       )}
 
-      {/* Histórico */}
-      <div className="space-y-3">
+      <div className="space-y-4 pt-6 border-t border-border">
         <div className="flex items-center justify-between">
-          <p className="text-sm font-semibold text-foreground">Histórico de emissões</p>
-          <span className="text-xs text-muted">{historico.length} emissão{historico.length !== 1 ? 'ões' : ''}</span>
+          <h3 className="text-base font-bold text-foreground">Histórico de emissões</h3>
+          <span className="clubber-chip py-1 px-3 min-h-0 text-[11px] font-bold uppercase pointer-events-none">
+            {historico.length} Registro{historico.length !== 1 ? 's' : ''}
+          </span>
         </div>
 
         {historico.length === 0 ? (
-          <p className="text-sm text-muted text-center py-6">Nenhum certificado emitido ainda.</p>
+          <div className="clubber-card py-10 text-center shadow-none">
+            <p className="text-sm font-medium text-muted">Nenhum certificado emitido no histórico.</p>
+          </div>
         ) : (
-          <div className="space-y-2">
+          <div className="space-y-3">
             {historico.map((item) => (
               <CardHistorico key={item.id} item={item} />
             ))}

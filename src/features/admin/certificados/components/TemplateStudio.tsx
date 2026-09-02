@@ -10,15 +10,42 @@ import {
 import type { TemplateConfig, VariavelTemplate } from '../types';
 import { VARIAVEIS_TEMPLATE } from '../types';
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
-
 function cls(...args: (string | false | undefined)[]) {
   return args.filter(Boolean).join(' ');
 }
 
-// ─── Painel de variáveis ──────────────────────────────────────────────────────
+function ListaVariaveis({ copiado, onCopiar }: { copiado: string | null, onCopiar: (c: string) => void }) {
+  return (
+    <ul className="divide-y divide-border bg-card max-h-[350px] overflow-y-auto hide-scrollbar">
+      {VARIAVEIS_TEMPLATE.map((v) => {
+        const copied = copiado === v.chave;
+        return (
+          <li key={v.chave} className="flex items-center justify-between gap-3 px-5 py-3.5 hover:bg-background-secondary transition-colors group">
+            <div className="min-w-0 flex-1">
+              <p className="text-xs font-mono font-bold text-primary truncate">{v.chave}</p>
+              <p className="text-[11px] font-medium text-muted truncate mt-0.5">{v.label}</p>
+            </div>
+            <button
+              type="button"
+              onClick={() => onCopiar(v.chave)}
+              className={cls(
+                'p-2.5 rounded-xl transition-all shrink-0',
+                copied
+                  ? 'bg-success-bg text-success-fg border border-success-fg/20 shadow-sm'
+                  : 'bg-background-tertiary text-muted border border-border hover:text-primary hover:border-primary/30',
+              )}
+              aria-label={`Copiar ${v.chave}`}
+            >
+              {copied ? <Check size={16} strokeWidth={3} /> : <Copy size={16} />}
+            </button>
+          </li>
+        );
+      })}
+    </ul>
+  );
+}
 
-function PainelVariaveis() {
+function PainelVariaveisDesktop() {
   const [copiado, setCopiado] = useState<string | null>(null);
 
   async function copiar(chave: string) {
@@ -28,154 +55,130 @@ function PainelVariaveis() {
   }
 
   return (
-    <div className="bg-card border border-border rounded-xl overflow-hidden">
-      <div className="px-4 py-3 border-b border-border">
-        <p className="text-xs font-semibold text-foreground uppercase tracking-wide">Variáveis disponíveis</p>
-        <p className="text-xs text-muted mt-0.5">Clique para copiar e colar no seu template</p>
+    <div className="clubber-card overflow-hidden shadow-sm hidden xl:block">
+      <div className="px-5 py-4 border-b border-border bg-background-secondary/50">
+        <p className="text-xs font-bold text-foreground uppercase tracking-wider">Variáveis Dinâmicas</p>
+        <p className="text-[11px] font-medium text-muted mt-1">Clique no ícone para copiar a tag</p>
       </div>
-      <ul className="divide-y divide-border">
-        {VARIAVEIS_TEMPLATE.map((v) => {
-          const copied = copiado === v.chave;
-          return (
-            <li key={v.chave} className="flex items-center justify-between gap-2 px-4 py-2.5 hover:bg-border/30 transition-colors">
-              <div className="min-w-0">
-                <p className="text-xs font-mono font-semibold text-primary truncate">{v.chave}</p>
-                <p className="text-[11px] text-muted truncate">{v.label}</p>
-              </div>
-              <button
-                type="button"
-                onClick={() => copiar(v.chave)}
-                className={cls(
-                  'p-1.5 rounded-lg transition-colors shrink-0',
-                  copied
-                    ? 'bg-success-bg text-success-fg'
-                    : 'text-muted hover:text-foreground hover:bg-border',
-                )}
-                aria-label={`Copiar ${v.chave}`}
-              >
-                {copied ? <Check size={13} /> : <Copy size={13} />}
-              </button>
-            </li>
-          );
-        })}
-      </ul>
+      <ListaVariaveis copiado={copiado} onCopiar={copiar} />
     </div>
   );
 }
 
-// ─── Preview do certificado ───────────────────────────────────────────────────
+function PainelVariaveisMobile() {
+  const [copiado, setCopiado] = useState<string | null>(null);
 
-interface PreviewProps {
-  config: TemplateConfig;
+  async function copiar(chave: string) {
+    await navigator.clipboard.writeText(chave);
+    setCopiado(chave);
+    setTimeout(() => setCopiado(null), 1500);
+  }
+
+  return (
+    <details className="clubber-card group overflow-hidden cursor-pointer shadow-sm [&_summary::-webkit-details-marker]:hidden xl:hidden">
+      <summary className="px-5 py-4 flex items-center justify-between bg-background-secondary/50 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/50">
+        <div>
+          <p className="text-xs font-bold text-foreground uppercase tracking-wider">Variáveis Dinâmicas</p>
+          <p className="text-[11px] font-medium text-muted mt-1">Toque para ver as tags disponíveis</p>
+        </div>
+        <ChevronDown size={18} className="text-muted group-open:rotate-180 transition-transform duration-300" />
+      </summary>
+      <div className="border-t border-border">
+        <ListaVariaveis copiado={copiado} onCopiar={copiar} />
+      </div>
+    </details>
+  );
 }
 
 const EXEMPLO: Record<string, string> = Object.fromEntries(
   VARIAVEIS_TEMPLATE.map((v) => [v.chave, v.exemplo]),
 );
 
-function CertificadoPreview({ config }: PreviewProps) {
+function CertificadoPreview({ config }: { config: TemplateConfig }) {
   const {
     backgroundUrl, nomeFontSize, nomeColor,
     eventoFontSize, eventoColor, textAlign, fontFamily,
-    nomePosX, nomePosY,
+    nomePosY,
   } = config;
 
   const alignClass =
-    textAlign === 'left'   ? 'text-left'   :
-    textAlign === 'right'  ? 'text-right'  :
-                             'text-center';
+    textAlign === 'left' ? 'text-left' :
+      textAlign === 'right' ? 'text-right' :
+        'text-center';
 
   return (
     <div
-      className="relative w-full rounded-xl overflow-hidden border border-border shadow-lg"
+      className="relative w-full rounded-xl sm:rounded-2xl overflow-hidden border border-border shadow-card mx-auto max-w-3xl"
       style={{ aspectRatio: '1.414 / 1', background: backgroundUrl ? 'transparent' : '#f8f4ec' }}
     >
-      {/* Fundo */}
       {backgroundUrl ? (
         <img src={backgroundUrl} alt="Fundo do certificado" className="absolute inset-0 w-full h-full object-cover" />
       ) : (
-        /* Placeholder de fundo — visual de certificado quando não há imagem */
         <div className="absolute inset-0 flex flex-col items-center justify-center"
           style={{ background: 'linear-gradient(135deg, #fdf6e3 0%, #f5e9c8 50%, #fdf6e3 100%)' }}
         >
-          {/* Borda decorativa */}
-          <div className="absolute inset-3 border-2 border-amber-300/40 rounded-lg pointer-events-none" />
-          <div className="absolute inset-4 border border-amber-200/30 rounded-md pointer-events-none" />
+          <div className="absolute inset-2 sm:inset-4 border-2 border-amber-300/50 rounded-xl pointer-events-none" />
+          <div className="absolute inset-3 sm:inset-5 border border-amber-200/40 rounded-lg pointer-events-none" />
         </div>
       )}
 
-      {/* Camada de conteúdo — posicionamento absoluto com % */}
-      <div
-        className="absolute inset-0 flex flex-col"
-        style={{ fontFamily }}
-      >
-        {/* Cabeçalho fixo */}
-        <div className={cls('pt-[6%] px-[8%]', alignClass)}>
+      <div className="absolute inset-0 flex flex-col" style={{ fontFamily }}>
+        <div className={cls('pt-[8%] px-[10%]', alignClass)}>
           <p
-            className="font-bold tracking-widest uppercase"
-            style={{ fontSize: `clamp(10px, ${eventoFontSize * 0.35}px, 18px)`, color: eventoColor, letterSpacing: '0.2em' }}
+            className="font-bold tracking-[0.2em] uppercase"
+            style={{ fontSize: `clamp(10px, ${eventoFontSize * 0.35}px, 18px)`, color: eventoColor }}
           >
             {EXEMPLO['{{NOME_INSTITUICAO}}']}
           </p>
           <p
             className="mt-1 font-medium"
-            style={{ fontSize: `clamp(8px, ${eventoFontSize * 0.28}px, 13px)`, color: eventoColor, opacity: 0.7 }}
+            style={{ fontSize: `clamp(8px, ${eventoFontSize * 0.28}px, 13px)`, color: eventoColor, opacity: 0.75 }}
           >
             Certifica que
           </p>
         </div>
 
-        {/* Nome do aluno — posicionado via nomePosY */}
         <div
-          className={cls('px-[8%]', alignClass)}
+          className={cls('px-[10%]', alignClass)}
           style={{ marginTop: `${nomePosY - 20}%` }}
         >
           <p
-            className="font-bold leading-tight"
+            className="font-black leading-tight"
             style={{ fontSize: `clamp(14px, ${nomeFontSize * 0.55}px, 42px)`, color: nomeColor }}
           >
             {EXEMPLO['{{NOME_ALUNO}}']}
           </p>
         </div>
 
-        {/* Dados do evento */}
-        <div className={cls('px-[8%] mt-[3%]', alignClass)}>
+        <div className={cls('px-[10%] mt-[4%]', alignClass)}>
           <p
             className="font-medium"
-            style={{ fontSize: `clamp(8px, ${eventoFontSize * 0.4}px, 16px)`, color: eventoColor, opacity: 0.75 }}
+            style={{ fontSize: `clamp(8px, ${eventoFontSize * 0.4}px, 16px)`, color: eventoColor, opacity: 0.8 }}
           >
             participou de
           </p>
           <p
-            className="font-semibold mt-0.5 leading-snug"
+            className="font-bold mt-1 leading-snug"
             style={{ fontSize: `clamp(10px, ${eventoFontSize * 0.48}px, 20px)`, color: eventoColor }}
           >
             {EXEMPLO['{{NOME_EVENTO}}']}
           </p>
           <p
-            className="mt-0.5"
-            style={{ fontSize: `clamp(7px, ${eventoFontSize * 0.32}px, 13px)`, color: eventoColor, opacity: 0.6 }}
+            className="mt-1 font-medium"
+            style={{ fontSize: `clamp(7px, ${eventoFontSize * 0.32}px, 13px)`, color: eventoColor, opacity: 0.65 }}
           >
             {EXEMPLO['{{DATA_EVENTO}}']} · {EXEMPLO['{{CARGA_HORARIA}}']}
           </p>
         </div>
 
-        {/* Rodapé */}
-        <div className={cls('absolute bottom-[6%] left-0 right-0 px-[8%]', alignClass)}>
-          <p style={{ fontSize: `clamp(6px, ${eventoFontSize * 0.26}px, 11px)`, color: eventoColor, opacity: 0.4 }}>
-            Código: {EXEMPLO['{{CODIGO_VALIDACAO}}']} · Emitido em {EXEMPLO['{{DATA_EMISSAO}}']}
+        <div className={cls('absolute bottom-[6%] left-0 right-0 px-[10%]', alignClass)}>
+          <p className="font-semibold" style={{ fontSize: `clamp(6px, ${eventoFontSize * 0.26}px, 11px)`, color: eventoColor, opacity: 0.45 }}>
+            Cód. Autenticidade: {EXEMPLO['{{CODIGO_VALIDACAO}}']} · Emitido em {EXEMPLO['{{DATA_EMISSAO}}']}
           </p>
         </div>
       </div>
     </div>
   );
-}
-
-// ─── Painel de controles ──────────────────────────────────────────────────────
-
-interface ControlesProps {
-  config: TemplateConfig;
-  onChange: (patch: Partial<TemplateConfig>) => void;
 }
 
 function SliderField({
@@ -186,9 +189,9 @@ function SliderField({
 }) {
   return (
     <div>
-      <div className="flex justify-between mb-1">
-        <span className="text-xs font-medium text-foreground">{label}</span>
-        <span className="text-xs text-muted">{value}px</span>
+      <div className="flex justify-between mb-3">
+        <span className="text-xs font-bold text-foreground">{label}</span>
+        <span className="text-xs font-semibold text-primary bg-primary/10 px-2 py-0.5 rounded-md">{value}px</span>
       </div>
       <input
         type="range"
@@ -196,48 +199,47 @@ function SliderField({
         max={max}
         value={value}
         onChange={(e) => onChange(Number(e.target.value))}
-        className="w-full h-1.5 rounded-full appearance-none bg-border cursor-pointer accent-primary"
+        className="w-full h-2 rounded-full appearance-none bg-border cursor-pointer accent-primary focus:outline-none focus:ring-2 focus:ring-primary/30"
       />
     </div>
   );
 }
 
-function ControlesPainel({ config, onChange }: ControlesProps) {
+function ControlesPainel({ config, onChange }: { config: TemplateConfig, onChange: (patch: Partial<TemplateConfig>) => void }) {
   return (
-    <div className="bg-card border border-border rounded-xl overflow-hidden">
-      <div className="px-4 py-3 border-b border-border">
-        <p className="text-xs font-semibold text-foreground uppercase tracking-wide">Controles visuais</p>
+    <div className="clubber-card overflow-hidden shadow-sm">
+      <div className="px-5 py-4 border-b border-border bg-background-secondary/50">
+        <p className="text-xs font-bold text-foreground uppercase tracking-wider">Ajustes de Design</p>
       </div>
 
-      <div className="p-4 space-y-5">
+      <div className="p-5 sm:p-6 space-y-8 bg-card">
         {/* Tipografia */}
         <div>
-          <p className="text-[11px] font-semibold text-muted uppercase tracking-wide mb-3">Tipografia</p>
-
-          <div className="mb-4 relative">
-            <label className="block text-xs font-medium text-foreground mb-1">Família</label>
+          <p className="text-[10px] font-black text-muted-subtle uppercase tracking-widest mb-4">Tipografia</p>
+          <div className="mb-6 relative">
+            <label className="block text-xs font-bold text-foreground mb-2">Família da Fonte</label>
             <select
-              className="input-base text-sm appearance-none pr-8"
+              className="input-base text-sm font-medium appearance-none pr-10 min-h-[44px]"
               value={config.fontFamily}
               onChange={(e) => onChange({ fontFamily: e.target.value as TemplateConfig['fontFamily'] })}
             >
-              <option value="serif">Serif (clássico)</option>
-              <option value="sans-serif">Sans-serif (moderno)</option>
-              <option value="monospace">Monospace (técnico)</option>
+              <option value="serif">Serif (Clássico)</option>
+              <option value="sans-serif">Sans-serif (Moderno)</option>
+              <option value="monospace">Monospace (Técnico)</option>
             </select>
-            <ChevronDown size={13} className="absolute right-3 top-[58%] text-muted pointer-events-none" />
+            <ChevronDown size={16} className="absolute right-3.5 top-[58%] text-muted pointer-events-none" />
           </div>
 
           <SliderField
-            label="Tamanho — Nome do aluno"
+            label="Tamanho do Nome do Aluno"
             value={config.nomeFontSize}
             min={20} max={72}
             onChange={(v) => onChange({ nomeFontSize: v })}
           />
 
-          <div className="mt-4">
+          <div className="mt-6">
             <SliderField
-              label="Tamanho — Textos secundários"
+              label="Tamanho dos Textos Secundários"
               value={config.eventoFontSize}
               min={10} max={36}
               onChange={(v) => onChange({ eventoFontSize: v })}
@@ -247,39 +249,39 @@ function ControlesPainel({ config, onChange }: ControlesProps) {
 
         {/* Cores */}
         <div>
-          <p className="text-[11px] font-semibold text-muted uppercase tracking-wide mb-3">Cores</p>
-          <div className="grid grid-cols-2 gap-3">
+          <p className="text-[10px] font-black text-muted-subtle uppercase tracking-widest mb-4">Cores das Fontes</p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-medium text-foreground mb-1">Nome do aluno</label>
-              <div className="flex items-center gap-2">
+              <label className="block text-xs font-bold text-foreground mb-2">Nome do Aluno</label>
+              <div className="flex items-center gap-2 bg-background border border-border p-1.5 rounded-xl focus-within:border-primary transition-colors min-h-[44px]">
                 <input
                   type="color"
                   value={config.nomeColor}
                   onChange={(e) => onChange({ nomeColor: e.target.value })}
-                  className="w-8 h-8 rounded-lg border border-border cursor-pointer bg-transparent p-0.5"
+                  className="w-8 h-8 rounded-lg cursor-pointer bg-transparent border-0 p-0 ml-1"
                 />
                 <input
                   type="text"
                   value={config.nomeColor}
                   onChange={(e) => onChange({ nomeColor: e.target.value })}
-                  className="input-base text-xs font-mono py-1.5"
+                  className="w-full text-sm font-mono font-bold bg-transparent outline-none uppercase"
                 />
               </div>
             </div>
             <div>
-              <label className="block text-xs font-medium text-foreground mb-1">Textos gerais</label>
-              <div className="flex items-center gap-2">
+              <label className="block text-xs font-bold text-foreground mb-2">Textos Gerais</label>
+              <div className="flex items-center gap-2 bg-background border border-border p-1.5 rounded-xl focus-within:border-primary transition-colors min-h-[44px]">
                 <input
                   type="color"
                   value={config.eventoColor}
                   onChange={(e) => onChange({ eventoColor: e.target.value })}
-                  className="w-8 h-8 rounded-lg border border-border cursor-pointer bg-transparent p-0.5"
+                  className="w-8 h-8 rounded-lg cursor-pointer bg-transparent border-0 p-0 ml-1"
                 />
                 <input
                   type="text"
                   value={config.eventoColor}
                   onChange={(e) => onChange({ eventoColor: e.target.value })}
-                  className="input-base text-xs font-mono py-1.5"
+                  className="w-full text-sm font-mono font-bold bg-transparent outline-none uppercase"
                 />
               </div>
             </div>
@@ -288,13 +290,13 @@ function ControlesPainel({ config, onChange }: ControlesProps) {
 
         {/* Alinhamento */}
         <div>
-          <p className="text-[11px] font-semibold text-muted uppercase tracking-wide mb-3">Alinhamento</p>
-          <div className="flex gap-2">
+          <p className="text-[10px] font-black text-muted-subtle uppercase tracking-widest mb-4">Alinhamento Textual</p>
+          <div className="flex gap-3">
             {(
               [
-                { v: 'left',   icon: AlignLeft   },
-                { v: 'center', icon: AlignCenter  },
-                { v: 'right',  icon: AlignRight   },
+                { v: 'left', icon: AlignLeft },
+                { v: 'center', icon: AlignCenter },
+                { v: 'right', icon: AlignRight },
               ] as const
             ).map(({ v, icon: Icon }) => (
               <button
@@ -302,26 +304,26 @@ function ControlesPainel({ config, onChange }: ControlesProps) {
                 type="button"
                 onClick={() => onChange({ textAlign: v })}
                 className={cls(
-                  'flex-1 flex items-center justify-center py-2 rounded-lg border text-sm transition-all',
+                  'flex-1 flex items-center justify-center py-3 rounded-xl border text-sm transition-all shadow-sm min-h-[44px]',
                   config.textAlign === v
-                    ? 'bg-primary/10 border-primary text-primary'
-                    : 'border-border text-muted hover:text-foreground hover:border-input-border-focus',
+                    ? 'bg-primary border-primary text-primary-fg'
+                    : 'bg-card border-border text-muted hover:text-foreground hover:border-border-hover hover:bg-background-secondary',
                 )}
                 aria-label={`Alinhar ${v}`}
               >
-                <Icon size={15} />
+                <Icon size={18} />
               </button>
             ))}
           </div>
         </div>
 
-        {/* Posição vertical do nome */}
+        {/* Posição Vertical */}
         <div>
-          <p className="text-[11px] font-semibold text-muted uppercase tracking-wide mb-3">Posição</p>
+          <p className="text-[10px] font-black text-muted-subtle uppercase tracking-widest mb-4">Ajuste de Altura</p>
           <SliderField
-            label="Posição vertical do nome"
+            label="Margem Superior do Nome"
             value={config.nomePosY}
-            min={30} max={70}
+            min={20} max={50}
             onChange={(v) => onChange({ nomePosY: v })}
           />
         </div>
@@ -330,14 +332,7 @@ function ControlesPainel({ config, onChange }: ControlesProps) {
   );
 }
 
-// ─── Componente principal ─────────────────────────────────────────────────────
-
-interface TemplateStudioProps {
-  config: TemplateConfig;
-  onChange: (patch: Partial<TemplateConfig>) => void;
-}
-
-export function TemplateStudio({ config, onChange }: TemplateStudioProps) {
+export function TemplateStudio({ config, onChange }: { config: TemplateConfig, onChange: (patch: Partial<TemplateConfig>) => void }) {
   const fileRef = useRef<HTMLInputElement>(null);
 
   function handleBackground(e: React.ChangeEvent<HTMLInputElement>) {
@@ -354,72 +349,67 @@ export function TemplateStudio({ config, onChange }: TemplateStudioProps) {
   }
 
   return (
-    <div className="space-y-6">
-
+    <div className="space-y-6 lg:space-y-8">
       {/* Upload do fundo */}
-      <div className="bg-card border border-border rounded-xl p-5">
-        <div className="flex items-center justify-between mb-3">
+      <div className="clubber-card p-5 sm:p-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
           <div>
-            <p className="text-sm font-semibold text-foreground">Imagem de fundo</p>
-            <p className="text-xs text-muted mt-0.5">PNG ou JPG · Proporção recomendada: A4 paisagem (1414×1000)</p>
+            <p className="text-base font-bold text-foreground">Imagem de Fundo do Certificado</p>
+            <p className="text-xs font-medium text-muted mt-1">Formatos aceitos: PNG ou JPG · Proporção recomendada: A4 (1414 × 1000 pixels)</p>
           </div>
           {config.backgroundUrl && (
             <button
               type="button"
               onClick={removeBackground}
-              className="flex items-center gap-1.5 text-xs text-error-fg hover:underline"
+              className="clubber-chip bg-error-bg text-error-fg border-error-fg/20 hover:bg-error-bg hover:text-error-fg hover:border-error-fg/40 shrink-0"
             >
-              <X size={13} />
-              Remover
+              <X size={14} strokeWidth={3} />
+              Remover Imagem
             </button>
           )}
         </div>
 
         {config.backgroundUrl ? (
-          <div className="relative rounded-lg overflow-hidden border border-border h-24">
-            <img src={config.backgroundUrl} alt="Fundo" className="w-full h-full object-cover" />
-            <div className="absolute inset-0 bg-black/20 flex items-center justify-center">
-              <span className="text-white text-xs font-medium bg-black/40 px-2 py-1 rounded">Fundo carregado</span>
+          <div className="relative rounded-xl overflow-hidden border border-border h-32 md:h-48 shadow-inner bg-background">
+            <img src={config.backgroundUrl} alt="Fundo do Template" className="w-full h-full object-cover" />
+            <div className="absolute inset-0 bg-black/30 flex items-center justify-center backdrop-blur-[2px]">
+              <span className="text-white text-xs font-bold uppercase tracking-wider bg-black/60 px-4 py-2 rounded-lg border border-white/20">
+                Fundo Carregado
+              </span>
             </div>
           </div>
         ) : (
           <button
             type="button"
             onClick={() => fileRef.current?.click()}
-            className="w-full border-2 border-dashed border-border hover:border-primary rounded-xl py-6 flex flex-col items-center gap-2 text-muted hover:text-primary transition-colors group"
+            className="w-full border-2 border-dashed border-border hover:border-primary bg-background-secondary hover:bg-primary/5 rounded-2xl py-12 flex flex-col items-center gap-3 text-muted hover:text-primary transition-all group min-h-[140px]"
           >
-            <ImagePlus size={24} strokeWidth={1.5} className="group-hover:scale-110 transition-transform" />
-            <span className="text-sm font-medium">Clique para enviar a imagem de fundo</span>
+            <div className="w-14 h-14 rounded-full bg-background border border-border group-hover:border-primary/40 flex items-center justify-center shadow-sm group-hover:scale-105 transition-transform">
+              <ImagePlus size={24} strokeWidth={2} />
+            </div>
+            <span className="text-sm font-bold px-4 text-center">Clique para enviar a imagem base do layout</span>
           </button>
         )}
-        <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleBackground} />
+        <input ref={fileRef} type="file" accept="image/png, image/jpeg" className="hidden" onChange={handleBackground} />
       </div>
-
-      {/* Layout principal: Preview + painéis laterais */}
-      <div className="grid grid-cols-1 xl:grid-cols-[1fr_280px] gap-5">
-
-        {/* Coluna esquerda: preview + variáveis (mobile: empilhado) */}
-        <div className="space-y-5 min-w-0">
-          <div>
-            <div className="flex items-center justify-between mb-2">
-              <p className="text-sm font-semibold text-foreground">Preview</p>
-              <span className="text-xs text-muted bg-border px-2 py-0.5 rounded-full">Não é o tamanho real</span>
+      <div className="grid grid-cols-1 xl:grid-cols-[1fr_340px] gap-6 items-start">
+        {/* Coluna Esquerda: Preview (Sticky no Mobile para ficar sempre visível) */}
+        <div className="space-y-6 min-w-0">
+          <div className="sticky top-0 z-30 pt-2 pb-4 sm:pt-4 xl:static xl:pb-0 bg-background/95 xl:bg-transparent backdrop-blur-xl xl:backdrop-blur-none border-b border-border xl:border-none -mx-4 px-4 xl:mx-0 xl:px-0 shadow-[0_10px_20px_-10px_rgba(0,0,0,0.05)] xl:shadow-none">            <div className="clubber-card p-3 sm:p-5 bg-background-secondary/30">
+            <div className="flex items-center justify-between mb-3 sm:mb-4">
+              <p className="text-sm font-bold text-foreground">Visualização em Tempo Real</p>
+              <span className="text-[10px] font-bold text-muted bg-border px-2.5 py-1 rounded-md uppercase tracking-wider">
+                Demonstração
+              </span>
             </div>
             <CertificadoPreview config={config} />
           </div>
-
-          {/* Variáveis — visível em mobile aqui, oculto no xl (fica na coluna direita) */}
-          <div className="xl:hidden">
-            <PainelVariaveis />
           </div>
         </div>
-
-        {/* Coluna direita: controles + variáveis (apenas xl+) */}
-        <div className="space-y-4">
+        {/* Coluna Direita: Controles e Variáveis (Empilham naturalmente no mobile) */}
+        <div className="space-y-6">
           <ControlesPainel config={config} onChange={onChange} />
-          <div className="hidden xl:block">
-            <PainelVariaveis />
-          </div>
+          <PainelVariaveisMobile />
         </div>
       </div>
     </div>

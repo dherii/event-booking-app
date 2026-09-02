@@ -62,10 +62,7 @@ export default async function HomePage() {
   }));
 
   return (
-    <main className="min-h-screen bg-background text-foreground bg-grid-pattern relative overflow-x-hidden">
-      {/* Elementos de luz difusa ambiental para profundidade visual */}
-      <div className="ambient-glow left-10 top-20" />
-      <div className="ambient-glow right-10 top-96" />
+    <main className="min-h-screen bg-background text-foreground relative overflow-x-hidden">
 
       <Suspense fallback={<div className="h-16 border-b border-border bg-background/50 backdrop-blur-md" />}>
         <SiteHeader

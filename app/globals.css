@@ -1,78 +1,76 @@
 @import "tailwindcss";
 
 /* ============================================================
-   IDENTIDADE VISUAL â€” Azul Marinho Escuro & Off-White
+   IDENTIDADE VISUAL — Minimalista Neutro (Zinc) + Accent Azul→Violeta
    ============================================================ */
 
 @custom-variant dark (&:where(.dark, .dark *));
 
 :root {
-  /* Fundo e superfÃ­cies â€” Off-white quente */
-  --background: #faf8f4;
-  --background-secondary: #f3f0e9;
-  --background-tertiary: #ece7dd;
+  /* Fundos e superfícies — branco absoluto / off-white sutil (Zinc) */
+  --background: #ffffff;
+  --background-secondary: #fafafa;
+  --background-tertiary: #f4f4f5;
 
   --card: #ffffff;
-  --card-hover: #f6f3ec;
+  --card-hover: #fafafa;
 
   --surface: rgba(255, 255, 255, 0.92);
-  --surface-hover: rgba(246, 243, 236, 0.98);
+  --surface-hover: rgba(250, 250, 250, 0.98);
 
-  /* Textos â€” Azul-marinho quase preto para leitura */
-  --foreground: #0e1b2e;
+  /* Texto — Zinc-900 para títulos, Zinc-500/400 para secundário */
+  --foreground: #18181b;
 
-  --muted: #4b5a70;
-  --muted-subtle: #8b97a8;
+  --muted: #71717a;
+  --muted-subtle: #a1a1aa;
 
-  --text-primary: #0e1b2e;
-  --text-secondary: #4b5a70;
-  --text-tertiary: #8b97a8;
+  --text-primary: #18181b;
+  --text-secondary: #52525b;
+  --text-tertiary: #a1a1aa;
 
-  /* Cor primÃ¡ria â€” Azul Marinho Escuro Institucional */
-  --primary: #0f2647;
-  --primary-hover: #0a1c37;
-  --primary-active: #061224;
-  --primary-fg: #faf8f4;
+  /* Marca — Azul Elétrico → Violeta. Uso restrito: botões, focos, seleção */
+  --primary: #3366ff;
+  --primary-hover: #2952e6;
+  --primary-active: #1f42cc;
+  --primary-fg: #ffffff;
 
-  /* Tons de apoio e acentos (Azul, sem laranja) */
-  --accent-purple: #0f2647;
-  --accent-purple-light: #1f3f6e;
-  --accent-purple-dark: #061224;
+  --accent-purple: #3366ff;
+  --accent-purple-light: #6690ff;
+  --accent-purple-dark: #2952cc;
 
-  /* Segundo acento â€” Azul mais claro em vez de laranja, para variedade sem sair do azul+off-white */
-  --accent-pink: #35578c;
-  --accent-pink-light: #4a70ab;
-  --accent-pink-dark: #24406b;
+  --accent-pink: #9933ff;
+  --accent-pink-light: #b366ff;
+  --accent-pink-dark: #7a29cc;
 
-  /* Gradientes da marca â€” sÃ³ tons de azul-marinho sobre off-white */
-  --gradient-brand: linear-gradient(135deg, #0f2647 0%, #1f3f6e 100%);
-  --gradient-brand-horizontal: linear-gradient(90deg, #0f2647 0%, #35578c 100%);
-  --gradient-neon: linear-gradient(135deg, #061224 0%, #0f2647 50%, #35578c 100%);
-  --gradient-hero: linear-gradient(180deg, rgba(14, 27, 46, 0.05) 0%, rgba(14, 27, 46, 0.4) 55%, rgba(14, 27, 46, 0.9) 100%);
+  /* Gradiente da marca — reservado para logo, texto de destaque e detalhes finos */
+  --gradient-brand: linear-gradient(135deg, #3366ff 0%, #9933ff 100%);
+  --gradient-brand-horizontal: linear-gradient(90deg, #3366ff 0%, #9933ff 100%);
+  --gradient-neon: linear-gradient(135deg, #2952cc 0%, #3366ff 50%, #9933ff 100%);
+  --gradient-hero: linear-gradient(180deg, rgba(9, 9, 11, 0.05) 0%, rgba(9, 9, 11, 0.45) 55%, rgba(9, 9, 11, 0.92) 100%);
 
   /* Inputs */
   --input-bg: #ffffff;
-  --input-bg-hover: #f6f3ec;
+  --input-bg-hover: #fafafa;
 
-  --input-border: #d8d2c4;
-  --input-border-hover: #a8a091;
-  --input-border-focus: #0f2647;
+  --input-border: #e4e4e7;
+  --input-border-hover: #d4d4d8;
+  --input-border-focus: #3366ff;
 
-  --input-ring: rgba(15, 38, 71, 0.2);
+  --input-ring: rgba(51, 102, 255, 0.16);
 
   /* Bordas */
-  --border: #e5e0d4;
-  --border-light: #f0ece1;
+  --border: #e4e4e7;
+  --border-light: #f4f4f5;
 
-  --border-neon: rgba(15, 38, 71, 0.35);
-  --border-purple: rgba(15, 38, 71, 0.25);
-  --border-pink: rgba(53, 87, 140, 0.4);
+  --border-neon: rgba(51, 102, 255, 0.35);
+  --border-purple: rgba(51, 102, 255, 0.25);
+  --border-pink: rgba(153, 51, 255, 0.3);
 
-  /* Feedback â€” Erro */
+  /* Feedback — Erro */
   --error-bg: #fef2f2;
   --error-fg: #dc2626;
 
-  /* Feedback â€” Sucesso */
+  /* Feedback — Sucesso */
   --success-bg: #f0fdf4;
   --success-fg: #16a34a;
 
@@ -83,55 +81,80 @@
   --warning-bg: #fffbeb;
   --warning-fg: #d97706;
 
-  /* Sombras */
-  --shadow-card: 0 4px 16px -4px rgba(14, 27, 46, 0.08), 0 2px 4px -2px rgba(14, 27, 46, 0.04);
-  --shadow-card-hover: 0 20px 40px -10px rgba(14, 27, 46, 0.12), 0 8px 16px -4px rgba(15, 38, 71, 0.1);
-  --shadow-neon: 0 8px 20px rgba(15, 38, 71, 0.22);
-  --shadow-purple: 0 8px 20px rgba(15, 38, 71, 0.18);
-  --shadow-pink: 0 8px 20px rgba(53, 87, 140, 0.22);
+  /* Sombras — realistas, suaves, neutras. Nada de "glow" saturado */
+  --shadow-card: 0 1px 2px rgba(9, 9, 11, 0.04), 0 1px 3px rgba(9, 9, 11, 0.06);
+  --shadow-card-hover: 0 8px 24px -8px rgba(9, 9, 11, 0.1), 0 2px 6px -2px rgba(9, 9, 11, 0.05);
+  --shadow-neon: 0 4px 14px -2px rgba(51, 102, 255, 0.2);
+  --shadow-purple: 0 4px 14px -2px rgba(51, 102, 255, 0.18);
+  --shadow-pink: 0 4px 14px -2px rgba(153, 51, 255, 0.18);
 }
 
-/* Modo escuro â€” Azul-marinho profundo com texto off-white */
+/* Modo escuro — Zinc quase preto, sem fundos azulados */
 .dark {
-  --background: #08131f;
-  --background-secondary: #0f2138;
-  --background-tertiary: #16304f;
-  --card: #0f2138;
-  --card-hover: #16304f;
-  --surface: rgba(15, 33, 56, 0.92);
-  --surface-hover: rgba(22, 48, 79, 0.98);
-  --foreground: #faf8f4;
-  --muted: #a8b3c2;
-  --muted-subtle: #6f7d90;
-  --text-primary: #faf8f4;
-  --text-secondary: #c3cbd6;
-  --text-tertiary: #6f7d90;
-  --primary: #4a70ab;
-  --primary-hover: #5f83ba;
-  --primary-active: #35578c;
-  --primary-fg: #08131f;
-  --accent-purple: #4a70ab;
-  --accent-purple-light: #6f92c4;
-  --accent-purple-dark: #35578c;
-  --accent-pink: #7ba0d4;
-  --accent-pink-light: #9bb9e0;
-  --accent-pink-dark: #5f83ba;
-  --input-bg: #0f2138;
-  --input-bg-hover: #16304f;
-  --input-border: #2a4363;
-  --input-border-hover: #3a577f;
-  --input-border-focus: #4a70ab;
-  --input-ring: rgba(74, 112, 171, 0.3);
-  --border: #1c3452;
-  --border-light: #0f2138;
-  --border-neon: rgba(74, 112, 171, 0.4);
-  --border-purple: rgba(74, 112, 171, 0.3);
-  --border-pink: rgba(123, 160, 212, 0.4);
-  --shadow-card: 0 4px 16px -4px rgba(0, 0, 0, 0.35);
-  --shadow-card-hover: 0 20px 40px -10px rgba(0, 0, 0, 0.45);
-  --shadow-neon: 0 8px 20px rgba(74, 112, 171, 0.28);
-  --shadow-purple: 0 8px 20px rgba(74, 112, 171, 0.22);
-  --shadow-pink: 0 8px 20px rgba(123, 160, 212, 0.25);
+  color-scheme: dark;
+
+  --background: #09090b;
+  --background-secondary: #121214;
+  --background-tertiary: #18181b;
+
+  --card: #121214;
+  --card-hover: #18181b;
+
+  --surface: rgba(18, 18, 20, 0.92);
+  --surface-hover: rgba(24, 24, 27, 0.98);
+
+  --foreground: #fafafa;
+
+  --muted: #a1a1aa;
+  --muted-subtle: #71717a;
+
+  --text-primary: #fafafa;
+  --text-secondary: #d4d4d8;
+  --text-tertiary: #71717a;
+
+  --primary: #3366ff;
+  --primary-hover: #5c85ff;
+  --primary-active: #7a9dff;
+  --primary-fg: #ffffff;
+
+  --accent-purple: #5c85ff;
+  --accent-purple-light: #85a3ff;
+  --accent-purple-dark: #3366ff;
+
+  --accent-pink: #b366ff;
+  --accent-pink-light: #c68fff;
+  --accent-pink-dark: #9933ff;
+
+  --input-bg: #121214;
+  --input-bg-hover: #18181b;
+
+  --input-border: #27272a;
+  --input-border-hover: #3f3f46;
+  --input-border-focus: #5c85ff;
+
+  --input-ring: rgba(92, 133, 255, 0.25);
+
+  --border: #27272a;
+  --border-light: #18181b;
+
+  --border-neon: rgba(92, 133, 255, 0.4);
+  --border-purple: rgba(92, 133, 255, 0.3);
+  --border-pink: rgba(179, 102, 255, 0.35);
+
+  --error-bg: rgba(220, 38, 38, 0.12);
+  --error-fg: #f87171;
+
+  --success-bg: rgba(22, 163, 74, 0.12);
+  --success-fg: #4ade80;
+
+  --warning-bg: rgba(217, 119, 6, 0.12);
+  --warning-fg: #fbbf24;
+
+  --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.3), 0 2px 8px rgba(0, 0, 0, 0.22);
+  --shadow-card-hover: 0 12px 28px -8px rgba(0, 0, 0, 0.45), 0 4px 10px -4px rgba(0, 0, 0, 0.3);
+  --shadow-neon: 0 4px 18px -2px rgba(92, 133, 255, 0.3);
+  --shadow-purple: 0 4px 18px -2px rgba(92, 133, 255, 0.25);
+  --shadow-pink: 0 4px 18px -2px rgba(179, 102, 255, 0.25);
 }
 
 /* ============================================================
@@ -214,10 +237,9 @@ body {
   font-family: var(--font-inter), Inter, Arial, Helvetica, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  transition: background-color 0.3s ease, color 0.3s ease;
+  transition: background-color 0.2s ease, color 0.2s ease;
 }
 
-/* Qualquer elemento nÃ£o deve criar overflow horizontal no mobile */
 img, video, svg, canvas {
   max-width: 100%;
   height: auto;
@@ -229,8 +251,8 @@ img, video, svg, canvas {
 }
 
 ::selection {
-  background-color: rgba(15, 38, 71, 0.2);
-  color: #0e1b2e;
+  background-color: rgba(51, 102, 255, 0.18);
+  color: var(--foreground);
 }
 
 ::-webkit-scrollbar {
@@ -241,11 +263,11 @@ img, video, svg, canvas {
   background: var(--background);
 }
 ::-webkit-scrollbar-thumb {
-  background: #d8d2c4;
+  background: var(--border);
   border-radius: 999px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--primary);
+  background: var(--muted-subtle);
 }
 
 a {
@@ -253,7 +275,6 @@ a {
   text-decoration: none;
 }
 
-/* Foco de teclado visÃ­vel â€” acessibilidade */
 :focus-visible {
   outline: 2px solid var(--primary);
   outline-offset: 2px;
@@ -261,46 +282,20 @@ a {
 
 @layer components {
   /* ============================================================
-     GRAFISMO E BACKGROUNDS GEOMÃ‰TRICOS PREMIUM
-     ============================================================ */
-  .bg-grid-pattern {
-    background-size: 40px 40px;
-    background-image: 
-      linear-gradient(to right, rgba(15, 38, 71, 0.045) 1px, transparent 1px),
-      linear-gradient(to bottom, rgba(15, 38, 71, 0.045) 1px, transparent 1px);
-  }
-
-  .bg-dots-pattern {
-    background-image: radial-gradient(rgba(15, 38, 71, 0.08) 1.5px, transparent 1.5px);
-    background-size: 24px 24px;
-  }
-
-  .ambient-glow {
-    position: absolute;
-    width: 400px;
-    height: 400px;
-    background: linear-gradient(135deg, rgba(15, 38, 71, 0.08), rgba(53, 87, 140, 0.05));
-    filter: blur(90px);
-    border-radius: 50%;
-    pointer-events: none;
-    z-index: 0;
-  }
-
-  /* ============================================================
-     COMPONENTES DE INTERFACE REFINADOS
+     COMPONENTES DE INTERFACE — limpos, sem texturas pesadas
      ============================================================ */
   .input-base {
     width: 100%;
-    padding: 0.75rem 1rem;
+    padding: 0.65rem 1rem;
     border-width: 1px;
     border-style: solid;
     border-color: var(--input-border);
-    border-radius: 0.75rem;
+    border-radius: 0.5rem;
     background-color: var(--input-bg);
     color: var(--foreground);
-    font-size: 16px; /* evita zoom automÃ¡tico no iOS */
+    font-size: 16px; /* evita zoom automático no iOS */
     outline: none;
-    transition: border-color 0.2s ease, background-color 0.2s ease, box-shadow 0.2s ease;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
   }
   .input-base:hover {
     border-color: var(--input-border-hover);
@@ -314,38 +309,33 @@ a {
   }
 
   .clubber-card {
-    background: linear-gradient(145deg, #ffffff, #fbfaf7);
+    background: var(--card);
     border: 1px solid var(--border);
-    border-radius: 1rem;
+    border-radius: 0.875rem;
     box-shadow: var(--shadow-card);
-    transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.25s ease, box-shadow 0.25s ease;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
   }
   .clubber-card:hover {
-    transform: translateY(-3px);
-    border-color: var(--border-neon);
+    border-color: var(--input-border-hover);
     box-shadow: var(--shadow-card-hover);
   }
 
-  .glass-card-premium {
-    background: rgba(255, 255, 255, 0.9);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
-    border: 1px solid rgba(229, 224, 212, 0.9);
-    box-shadow: 0 12px 32px -8px rgba(14, 27, 46, 0.08), 0 4px 12px -4px rgba(15, 38, 71, 0.04);
-    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-  }
-  
-  .glass-card-premium:hover {
-    border-color: rgba(15, 38, 71, 0.3);
-    box-shadow: 0 20px 40px -10px rgba(14, 27, 46, 0.12), 0 8px 16px -4px rgba(15, 38, 71, 0.08);
-    transform: translateY(-3px);
+  /* Superfície com leve desfoque — usar apenas em headers/overlays, nunca em cards grandes */
+  .glass {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
   }
 
-  .glass {
-    background: rgba(255, 255, 255, 0.85);
-    border: 1px solid rgba(14, 27, 46, 0.06);
-    backdrop-filter: blur(18px);
-    -webkit-backdrop-filter: blur(18px);
+  .glass-card-premium {
+    background: var(--card);
+    border: 1px dashed var(--border);
+    box-shadow: var(--shadow-card);
+    transition: border-color 0.2s ease;
+  }
+  .glass-card-premium:hover {
+    border-color: var(--input-border-hover);
   }
 
   .clubber-button {
@@ -353,33 +343,32 @@ a {
     align-items: center;
     justify-content: center;
     gap: 0.5rem;
-    min-height: 44px;
-    padding: 0.7rem 1.25rem;
+    min-height: 42px;
+    padding: 0.65rem 1.25rem;
     border: none;
-    border-radius: 0.75rem;
+    border-radius: 0.5rem;
     background-color: var(--primary);
     color: var(--primary-fg);
-    font-weight: 700;
+    font-weight: 600;
     cursor: pointer;
-    transition: transform 0.2s ease, background-color 0.2s ease, box-shadow 0.2s ease;
+    transition: background-color 0.15s ease, box-shadow 0.15s ease;
   }
   .clubber-button:hover {
     background-color: var(--primary-hover);
-    transform: translateY(-1px);
-    box-shadow: 0 6px 16px rgba(15, 38, 71, 0.25);
+    box-shadow: var(--shadow-neon);
   }
   .clubber-button:active {
     background-color: var(--primary-active);
-    transform: translateY(0);
   }
 
   .text-brand-gradient {
-    background-image: linear-gradient(90deg, var(--accent-purple), var(--accent-pink));
+    background-image: var(--gradient-brand);
     -webkit-background-clip: text;
     background-clip: text;
     color: transparent;
   }
 
+  /* Detalhe fino — uso de accent permitido (não é uma superfície) */
   .accent-bar-top {
     position: relative;
   }
@@ -389,61 +378,43 @@ a {
     top: 0;
     left: 1.5rem;
     right: 1.5rem;
-    height: 3px;
+    height: 2px;
     background: var(--gradient-brand-horizontal);
     border-radius: 0 0 4px 4px;
   }
 
-  .badge-universitario {
-    display: inline-flex;
-    align-items: center;
-    padding: 0.3rem 0.6rem;
-    border-radius: 999px;
-    background-color: #f0ece1;
-    border: 1px solid #d8d2c4;
-    color: #0f2647;
-    font-size: 0.7rem;
-    font-weight: 700;
-    text-transform: uppercase;
-  }
-
-  .badge-pub {
-    display: inline-flex;
-    align-items: center;
-    padding: 0.3rem 0.6rem;
-    border-radius: 999px;
-    background-color: #eef2f8;
-    border: 1px solid #c3d2e6;
-    color: #0f2647;
-    font-size: 0.7rem;
-    font-weight: 700;
-    text-transform: uppercase;
-  }
-
+  /* Badges de categoria — tratamento neutro único (sem hash de cores saturadas) */
+  .badge-universitario,
+  .badge-pub,
   .badge-sunset {
     display: inline-flex;
     align-items: center;
-    padding: 0.3rem 0.6rem;
+    padding: 0.3rem 0.65rem;
     border-radius: 999px;
-    background-color: #eef2f8;
-    border: 1px solid #c3d2e6;
-    color: #35578c;
+    background-color: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--text-secondary);
     font-size: 0.7rem;
-    font-weight: 700;
+    font-weight: 600;
     text-transform: uppercase;
+    letter-spacing: 0.02em;
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
   }
 
+  /* Urgência/escassez — cor semântica, não é a cor da marca */
   .badge-urgency {
     display: inline-flex;
     align-items: center;
-    padding: 0.35rem 0.65rem;
+    padding: 0.3rem 0.65rem;
     border-radius: 999px;
-    background: linear-gradient(135deg, #0f2647, #35578c);
-    color: #faf8f4;
+    background-color: #dc2626;
+    color: #ffffff;
     font-size: 0.7rem;
-    font-weight: 800;
+    font-weight: 600;
     text-transform: uppercase;
-    box-shadow: 0 4px 10px rgba(15, 38, 71, 0.25);
+    letter-spacing: 0.02em;
+    box-shadow: 0 2px 8px rgba(220, 38, 38, 0.25);
   }
 
   .clubber-chip {
@@ -451,114 +422,79 @@ a {
     align-items: center;
     justify-content: center;
     gap: 0.4rem;
-    min-height: 40px;
-    padding: 0.55rem 1rem;
+    min-height: 38px;
+    padding: 0.5rem 0.95rem;
     border: 1px solid var(--border);
     border-radius: 999px;
-    background-color: #ffffff;
+    background-color: var(--card);
     color: var(--muted);
     font-size: 0.875rem;
-    font-weight: 600;
+    font-weight: 500;
     white-space: nowrap;
     cursor: pointer;
-    transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
+    transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
   }
   .clubber-chip:hover {
-    border-color: var(--border-neon);
+    border-color: var(--input-border-hover);
     color: var(--foreground);
     background-color: var(--card-hover);
   }
   .clubber-chip.active {
     border-color: var(--primary);
     background: var(--primary);
-    color: #faf8f4;
-    box-shadow: 0 4px 12px rgba(15, 38, 71, 0.25);
+    color: var(--primary-fg);
   }
 
   .event-price {
-    color: var(--primary);
-    font-weight: 800;
+    color: var(--foreground);
+    font-weight: 700;
   }
 
   .hero-overlay {
     position: absolute;
     inset: 0;
-    background: linear-gradient(180deg, rgba(14, 27, 46, 0.05) 0%, rgba(14, 27, 46, 0.35) 50%, rgba(14, 27, 46, 0.85) 100%);
+    background: var(--gradient-hero);
     pointer-events: none;
   }
 
   .event-image {
-    transition: transform 0.5s ease, filter 0.5s ease;
+    transition: transform 0.4s ease;
   }
   .clubber-card:hover .event-image {
-    transform: scale(1.05);
+    transform: scale(1.03);
   }
 }
 
 /* ============================================================
-   RESPONSIVIDADE MOBILE â€” breakpoints progressivos
+   RESPONSIVIDADE MOBILE
    ============================================================ */
 
-/* Tablet e telas mÃ©dias */
-@media (max-width: 1024px) {
-  .ambient-glow {
-    width: 280px;
-    height: 280px;
-    filter: blur(70px);
-  }
-}
-
-/* Mobile grande (a maior parte dos celulares) */
 @media (max-width: 768px) {
   html, body {
     overflow-x: hidden;
   }
 
   .clubber-chip {
-    min-height: 38px;
-    padding: 0.5rem 0.85rem;
+    min-height: 36px;
+    padding: 0.45rem 0.8rem;
     font-size: 0.8rem;
   }
 
   .clubber-button {
     width: 100%;
-    min-height: 46px;
+    min-height: 44px;
   }
 
-  .clubber-card {
-    border-radius: 0.85rem;
-  }
-
+  .clubber-card,
   .glass-card-premium,
   .glass {
-    border-radius: 0.85rem;
-  }
-
-  .bg-grid-pattern {
-    background-size: 28px 28px;
-  }
-
-  .bg-dots-pattern {
-    background-size: 18px 18px;
-  }
-
-  .ambient-glow {
-    width: 220px;
-    height: 220px;
-    filter: blur(60px);
-  }
-
-  /* Cards nÃ£o devem "levantar" no hover em telas de toque; a transiÃ§Ã£o de tap Ã© mais leve */
-  .clubber-card:hover,
-  .glass-card-premium:hover {
-    transform: none;
+    border-radius: 0.75rem;
   }
 }
 
-/* Mobile pequeno */
 @media (max-width: 480px) {
   .clubber-button {
-    padding: 0.65rem 1rem;
+    padding: 0.6rem 1rem;
     font-size: 0.9rem;
   }
 
@@ -567,7 +503,7 @@ a {
   .badge-sunset,
   .badge-urgency {
     font-size: 0.65rem;
-    padding: 0.25rem 0.5rem;
+    padding: 0.25rem 0.55rem;
   }
 
   .accent-bar-top::before {
@@ -576,7 +512,6 @@ a {
   }
 }
 
-/* Respeita Ã¡rea segura de notch/home-indicator em iOS */
 @supports (padding: max(0px)) {
   body {
     padding-left: env(safe-area-inset-left);

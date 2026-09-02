@@ -149,7 +149,7 @@ function LoteCard({
             <p className="text-[11px] text-success-fg mt-1">✓ Ingresso gratuito</p>
           )}
           {!isGratuito && lote.preco < 5 && (
-            <p className="text-[11px] text-warning-fg mt-1">⚠️ Valor mínimo sugerido: R$ 5,00 (taxas de gateway)</p>
+            <p className="text-[11px] text-warning-fg mt-1">⚠️ Valor mínimo: R$ 5,00</p>
           )}
         </div>
 
