@@ -15,7 +15,7 @@ export default function MetricCards({ metrics }: MetricCardsProps) {
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
       <div className="bg-card border border-border p-6 rounded-xl shadow-sm">
         <p className="text-muted text-xs font-semibold uppercase tracking-wider">Receita Total</p>
-        <p className="text-2xl font-bold text-emerald-600 mt-2">
+        <p className="text-2xl font-bold text-success-fg mt-2">
           R$ {metrics.totalReceita.toFixed(2)}
         </p>
       </div>
@@ -32,7 +32,7 @@ export default function MetricCards({ metrics }: MetricCardsProps) {
 
       <div className="bg-card border border-border p-6 rounded-xl shadow-sm">
         <p className="text-muted text-xs font-semibold uppercase tracking-wider">Aguardando Pagamento</p>
-        <p className="text-2xl font-bold text-amber-600 mt-2">{metrics.pendentes}</p>
+        <p className="text-2xl font-bold text-warning-fg mt-2">{metrics.pendentes}</p>
       </div>
     </div>
   );

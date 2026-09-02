@@ -161,9 +161,9 @@ export function SiteHeader({ isLoggedIn, temPainelAdmin, userNome, avatarUrl }: 
       <div className="mx-auto flex h-20 max-w-7xl items-center gap-6 px-4 sm:px-6 lg:px-8">
         <Link href="/" className="group flex shrink-0 items-center gap-3">
           <div className="relative flex h-10 w-10 items-center justify-center overflow-hidden rounded-2xl bg-gradient-to-br from-accent-purple to-accent-pink shadow-purple transition-transform duration-300 group-hover:scale-105">
-            <span className="text-xl font-black text-white">C</span>
+            <span className="text-xl font-black text-white">V</span>
           </div>
-          <span className="text-2xl font-black tracking-tight text-brand-gradient">Clubber</span>
+          <span className="text-2xl font-black tracking-tight text-brand-gradient">Vertix</span>
         </Link>
 
         {/* Busca — desktop */}
@@ -221,10 +221,11 @@ export function SiteHeader({ isLoggedIn, temPainelAdmin, userNome, avatarUrl }: 
           ) : null}
         </div>
 
+        {/* Botão do menu mobile corrigido para garantir exibição e clique */}
         <button
           type="button"
           onClick={() => setMenuAberto(true)}
-          className="ml-auto flex h-11 w-11 items-center justify-center rounded-xl bg-card border border-border text-muted hover:text-foreground sm:hidden cursor-pointer shadow-sm"
+          className="ml-auto flex sm:hidden h-11 w-11 items-center justify-center rounded-xl bg-card border border-border text-muted hover:text-foreground cursor-pointer shadow-sm z-20"
           aria-label="Abrir menu de navegação"
         >
           <Menu size={22} />
@@ -261,16 +262,14 @@ export function SiteHeader({ isLoggedIn, temPainelAdmin, userNome, avatarUrl }: 
         </div>
       )}
 
-      {/* Drawer mobile */}
+      {/* Drawer mobile estruturado com camada isolada */}
       {menuAberto && (
-        <>
-          <button
-            type="button"
-            className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm sm:hidden cursor-default border-none"
+        <div className="fixed inset-0 z-50 flex sm:hidden">
+          <div 
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm transition-opacity"
             onClick={() => setMenuAberto(false)}
-            aria-label="Fechar menu"
           />
-          <div className="fixed inset-y-0 right-0 z-50 flex w-80 flex-col bg-background border-l border-border p-6 sm:hidden shadow-2xl">
+          <div className="relative ml-auto flex h-full w-80 flex-col bg-background border-l border-border p-6 shadow-2xl overflow-y-auto z-10">
             <div className="flex items-center justify-between mb-8">
               <span className="text-xl font-black text-brand-gradient">Menu</span>
               <button
@@ -368,7 +367,7 @@ export function SiteHeader({ isLoggedIn, temPainelAdmin, userNome, avatarUrl }: 
               )}
             </nav>
           </div>
-        </>
+        </div>
       )}
     </header>
   );

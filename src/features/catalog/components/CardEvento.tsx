@@ -36,10 +36,12 @@ interface CardEventoProps {
   favoritadoInicial?: boolean;
 }
 
+// Paleta de badges restrita à identidade da marca (azul-marinho + off-white),
+// variando apenas tom/contraste para diferenciar categorias visualmente.
 const CORES_CATEGORIA: Record<string, string> = {
   'Universitário': 'bg-accent-purple/90 text-white border-accent-purple/40',
-  'Pub / Bar':     'bg-orange-500/90 text-white border-orange-400/40',
-  Sunset:          'bg-yellow-400/90 text-black border-yellow-300/40',
+  'Pub / Bar':     'bg-primary-active/90 text-white border-primary-active/40',
+  Sunset:          'bg-background text-primary border-primary/30',
   Festa:           'bg-accent-pink/90 text-white border-accent-pink/40',
   Show:            'bg-primary/90 text-primary-fg border-primary/40',
 };
@@ -47,9 +49,9 @@ const CORES_CATEGORIA: Record<string, string> = {
 const PALETA_FALLBACK = [
   'bg-accent-purple/90 text-white border-accent-purple/40',
   'bg-accent-pink/90 text-white border-accent-pink/40',
-  'bg-orange-500/90 text-white border-orange-400/40',
+  'bg-primary-active/90 text-white border-primary-active/40',
   'bg-primary/90 text-primary-fg border-primary/40',
-  'bg-yellow-400/90 text-black border-yellow-300/40',
+  'bg-background text-primary border-primary/30',
 ];
 
 function corCategoria(categoria: string) {

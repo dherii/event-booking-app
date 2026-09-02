@@ -4,7 +4,7 @@ import { CatalogoClient } from '@/src/features/catalog/components/CatalogoClient
 import { SiteHeader } from '@/src/features/catalog/components/SiteHeader';
 import { listarMeusFavoritosIds } from '@/src/features/catalog/actions';
 import { BannerCarrossel } from '@/src/features/public/components/BannerCarrossel';
-import { Ticket, Sparkles } from 'lucide-react';
+import { Ticket } from 'lucide-react';
 
 export default async function HomePage() {
   const supabaseAuth = await createSupabaseServerClient();
@@ -62,12 +62,12 @@ export default async function HomePage() {
   }));
 
   return (
-    <main className="min-h-screen bg-background text-foreground bg-grid-pattern relative">
+    <main className="min-h-screen bg-background text-foreground bg-grid-pattern relative overflow-x-hidden">
       {/* Elementos de luz difusa ambiental para profundidade visual */}
       <div className="ambient-glow left-10 top-20" />
       <div className="ambient-glow right-10 top-96" />
 
-      <Suspense fallback={<div className="h-16 border-b border-border bg-white/50 backdrop-blur-md" />}>
+      <Suspense fallback={<div className="h-16 border-b border-border bg-background/50 backdrop-blur-md" />}>
         <SiteHeader
           isLoggedIn={!!user}
           temPainelAdmin={temPainelAdmin}
@@ -84,15 +84,10 @@ export default async function HomePage() {
           </div>
         )}
 
-        {/* Bloco de Destaque / Carrossel com container glassmorphism premium */}
+        {/* Bloco de Destaque / Carrossel — o título "Destaques da Semana" agora
+            está embutido como selo dentro do próprio banner */}
         {eventosBanners.length > 0 && (
-          <section className="glass-card-premium p-3 sm:p-4 rounded-2xl shadow-xl">
-            <div className="flex items-center gap-2 mb-3 px-2">
-              <Sparkles className="w-4 h-4 text-primary" />
-              <span className="text-xs font-bold uppercase tracking-wider text-muted">Destaques da Semana</span>
-            </div>
-            <BannerCarrossel eventos={eventosBanners} />
-          </section>
+          <BannerCarrossel eventos={eventosBanners} />
         )}
 
         {!eventos || eventos.length === 0 ? (

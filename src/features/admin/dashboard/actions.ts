@@ -99,10 +99,14 @@ export async function getDashboardData() {
       return acc;
     }, {});
 
+    // Correção: antes essa string também embutia "bg-blue-500" junto com a largura,
+    // o que colidia com o "bg-primary" já aplicado no SalesChart (duas classes de
+    // cor de fundo na mesma div — resultado imprevisível). Agora geramos só a largura;
+    // a cor fica inteiramente a cargo do componente que já usa o token do tema.
     const chartData = Object.entries(vendasAgrupadas).map(([nome, vendas]) => ({
       nome,
       vendas,
-      porcentagem: `w-[${Math.min((vendas / 50) * 100, 100)}%] bg-blue-500`
+      porcentagem: `w-[${Math.min((vendas / 50) * 100, 100)}%]`
     }));
 
     return {

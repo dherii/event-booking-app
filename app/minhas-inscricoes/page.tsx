@@ -19,7 +19,7 @@ export default async function MinhasInscricoesPage() {
   const inscricoes = await listarMinhasInscricoes();
 
   return (
-    <main className="min-h-screen bg-background text-foreground p-6 sm:p-8">
+    <main className="min-h-screen bg-background text-foreground p-4 sm:p-6 md:p-8">
       <div className="max-w-2xl mx-auto space-y-6">
         <Link href="/" className="flex items-center gap-1.5 text-sm text-muted hover:text-primary transition-colors">
           <ArrowLeft size={14} />

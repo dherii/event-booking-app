@@ -3,8 +3,26 @@
 import { getSupabaseAdmin } from '@/src/config/supabase';
 import { exigirDonoOuAdmin } from '@/src/features/admin/configuracoes/actions';
 
-// Busca todos os eventos reais do produtor
-export async function listarEventosParaCertificados() {
+interface RegrasCertificado {
+  emiteCertificado: boolean;
+  cargaHoraria: number;
+  regraEmissao: string;
+  percentualPresenca: number;
+  diasLiberacao: number;
+}
+
+interface EventoCertificado {
+  id: string;
+  nome: string;
+  diasEvento: number;
+  emiteCertificado: boolean;
+  cargaHoraria: number;
+  regraEmissao: string;
+  percentualPresenca: number;
+  diasLiberacao: number;
+}
+
+export async function listarEventosParaCertificados(): Promise<EventoCertificado[]> {
   const { estabelecimentoId, isGlobal } = await exigirDonoOuAdmin();
   const supabase = getSupabaseAdmin();
 
@@ -33,8 +51,7 @@ export async function listarEventosParaCertificados() {
   }));
 }
 
-// Salva as configurações de um evento específico
-export async function salvarRegrasCertificado(eventoId: string, regras: any) {
+export async function salvarRegrasCertificado(eventoId: string, regras: RegrasCertificado) {
   const { estabelecimentoId, isGlobal } = await exigirDonoOuAdmin();
   if (isGlobal) throw new Error('Selecione um estabelecimento específico para salvar regras.');
 
@@ -50,7 +67,7 @@ export async function salvarRegrasCertificado(eventoId: string, regras: any) {
       dias_liberacao_pos_evento: regras.diasLiberacao,
     })
     .eq('id', eventoId)
-    .eq('estabelecimento_id', estabelecimentoId); // Proteção de segurança
+    .eq('estabelecimento_id', estabelecimentoId);
 
   if (error) throw new Error(error.message);
 

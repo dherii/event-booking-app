@@ -61,17 +61,17 @@ export default function OverviewTable({ inscricoes }: OverviewTableProps) {
 
                     <td className="p-4 font-mono text-xs max-w-[150px] truncate">
                       {isGratuito ? (
-                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-700 border border-slate-200">
-    GRATUITO
-  </span>
-) : (
-  <span className="text-primary">
-    {inscricao.txid_pix ?? '-'}
-  </span>
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-background-tertiary text-muted border border-border">
+                          GRATUITO
+                        </span>
+                      ) : (
+                        <span className="text-primary">
+                          {inscricao.txid_pix ?? '-'}
+                        </span>
                       )}
                     </td>
 
-                    <td className="p-4 text-emerald-600 font-semibold">
+                    <td className="p-4 text-success-fg font-semibold">
                       R$ {preco.toFixed(2)}
                     </td>
 
@@ -79,10 +79,10 @@ export default function OverviewTable({ inscricoes }: OverviewTableProps) {
                       <span
                         className={`text-xs font-semibold px-2.5 py-1 rounded-full ${
                           inscricao.status_pagamento === 'PAGO'
-                            ? 'bg-emerald-100 text-emerald-700 border border-emerald-200'
+                            ? 'bg-success-bg text-success-fg border border-success-fg/20'
                             : inscricao.status_pagamento === 'PENDENTE'
-                            ? 'bg-amber-100 text-amber-700 border border-amber-200'
-                            : 'bg-red-100 text-red-700 border border-red-200'
+                            ? 'bg-warning-bg text-warning-fg border border-warning-fg/20'
+                            : 'bg-error-bg text-error-fg border border-error-fg/20'
                         }`}
                       >
                         {inscricao.status_pagamento}

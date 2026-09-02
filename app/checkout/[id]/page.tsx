@@ -8,7 +8,7 @@
 
 'use client';
 
-import { use, useEffect, useState, useCallback } from 'react';
+import { use, useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { CheckCircle, Copy, Check, Loader2, Clock, AlertCircle } from 'lucide-react';
 
@@ -73,67 +73,73 @@ function EstadoFalha() {
 
 export default function CheckoutPage({ params }: CheckoutPageProps) {
   const router = useRouter();
-  const { id } = use(params); // <-- CORREÇÃO 2: Extraindo com o hook use()
+  const { id } = use(params);
 
   const [dados,       setDados]       = useState<DadosCheckout | null>(null);
   const [loadingPage, setLoadingPage] = useState(true);
   const [copiado,     setCopiado]     = useState(false);
-  const [polling,     setPolling]     = useState(true);
   // Tempo restante (15 minutos para o QR Code expirar — conservador)
   const [segundos,    setSegundos]    = useState(15 * 60);
   const [erroBusca,   setErroBusca]   = useState<string | null>(null);
 
-  // ── Busca dados da inscrição no backend ──────────────────────────────────
-  const buscarInscricao = useCallback(async () => {
-    try {
-      const res = await fetch(`/api/checkout/${id}/status`);
-      if (!res.ok) throw new Error('Inscrição não encontrada.');
-      const data: DadosCheckout = await res.json();
-      setDados(data);
+  const statusAtual = dados?.status_pagamento;
+  const finalizado = statusAtual === 'PAGO' || statusAtual === 'FALHA';
 
-      // Para o polling se pago ou com falha
-      if (data.status_pagamento === 'PAGO' || data.status_pagamento === 'FALHA') {
-        setPolling(false);
+  // Ref que espelha "finalizado" pro polling conseguir se auto-encerrar
+  // sem precisar recriar o efeito (e o setInterval) a cada atualização de estado.
+  const finalizadoRef = useRef(finalizado);
+  useEffect(() => {
+    finalizadoRef.current = finalizado;
+  }, [finalizado]);
+
+  // ── Busca inicial + polling a cada 5s ────────────────────────────────────
+  // Padrão recomendado pelo React para fetch em efeito: a função de busca
+  // fica declarada dentro do próprio efeito e usa uma flag de cancelamento
+  // pra evitar setState depois que o componente desmontar.
+  useEffect(() => {
+    let cancelado = false;
+
+    async function carregar() {
+      try {
+        const res = await fetch(`/api/checkout/${id}/status`);
+        if (!res.ok) throw new Error('Inscrição não encontrada.');
+        const data: DadosCheckout = await res.json();
+        if (cancelado) return;
+        setDados(data);
+      } catch (err) {
+        if (cancelado) return;
+        setErroBusca(err instanceof Error ? err.message : 'Erro ao carregar dados.');
+      } finally {
+        if (!cancelado) setLoadingPage(false);
       }
-    } catch (err) {
-      setErroBusca(err instanceof Error ? err.message : 'Erro ao carregar dados.');
-    } finally {
-      setLoadingPage(false);
     }
-  }, [id]);
 
-  // ── Carrega na montagem ───────────────────────────────────────────────────
-  useEffect(() => {
-    buscarInscricao();
-  }, [buscarInscricao]);
+    carregar();
 
-  // ── Polling a cada 5s enquanto PENDENTE ──────────────────────────────────
-  useEffect(() => {
-    if (!polling) return;
-
-    const interval = setInterval(() => {
-      buscarInscricao();
+    const intervalId = setInterval(() => {
+      if (finalizadoRef.current) {
+        clearInterval(intervalId);
+        return;
+      }
+      carregar();
     }, 5000);
 
-    return () => clearInterval(interval);
-  }, [polling, buscarInscricao]);
+    return () => {
+      cancelado = true;
+      clearInterval(intervalId);
+    };
+  }, [id]);
 
-  // ── Contador regressivo ───────────────────────────────────────────────────
+  // ── Contador regressivo — só corre enquanto o pagamento está pendente ───
   useEffect(() => {
-    if (!polling || dados?.status_pagamento !== 'PENDENTE') return;
+    if (statusAtual !== 'PENDENTE') return;
 
     const timer = setInterval(() => {
-      setSegundos((s) => {
-        if (s <= 1) {
-          setPolling(false);
-          return 0;
-        }
-        return s - 1;
-      });
+      setSegundos((s) => (s <= 1 ? 0 : s - 1));
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [polling, dados?.status_pagamento]);
+  }, [statusAtual]);
 
   // ── Copia o código Pix ────────────────────────────────────────────────────
   async function copiarCodigo() {

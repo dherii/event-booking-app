@@ -6,6 +6,15 @@ import { TrendingUp, Percent, Wallet } from 'lucide-react';
 import type { Transacao } from '../types';
 import { gerarDadosGrafico } from '../types';
 
+// Cores literais para o recharts — o SVG do gráfico não lê classes Tailwind/CSS vars,
+// então usamos os mesmos hex do tema Vertix (azul-marinho + off-white) diretamente aqui.
+const CHART_COLORS = {
+  grid: '#e5e0d4',      // --border
+  axisText: '#4b5a70',  // --muted
+  bruto: '#e5e0d4',     // --border (neutro, "bruto")
+  liquido: '#0f2647',   // --primary (azul-marinho, "líquido")
+};
+
 function fmt(v: number) {
   return v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 }
@@ -20,21 +29,21 @@ interface KpiProps {
 
 function KpiCard({ label, value, sub, icon: Icon, variant }: KpiProps) {
   const iconClass =
-    variant === 'accent' ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' :
-    variant === 'muted'  ? 'bg-rose-50 text-rose-600 border border-rose-100' :
-                           'bg-blue-50 text-blue-600 border border-blue-100';
+    variant === 'accent' ? 'bg-success-bg text-success-fg border border-success-fg/15' :
+    variant === 'muted'  ? 'bg-error-bg text-error-fg border border-error-fg/15' :
+                           'bg-primary/10 text-primary border border-primary/15';
 
   return (
-    <div className="bg-white border border-slate-200/80 rounded-2xl p-5 shadow-sm flex flex-col gap-3">
+    <div className="bg-card border border-border rounded-2xl p-5 shadow-sm flex flex-col gap-3">
       <div className="flex items-center justify-between">
-        <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">{label}</span>
+        <span className="text-xs font-semibold uppercase tracking-wider text-muted">{label}</span>
         <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${iconClass}`}>
           <Icon size={18} strokeWidth={1.8} />
         </div>
       </div>
       <div>
-        <p className="text-2xl font-bold tracking-tight text-slate-900">{value}</p>
-        <p className="text-xs text-slate-500 mt-1">{sub}</p>
+        <p className="text-2xl font-bold tracking-tight text-foreground">{value}</p>
+        <p className="text-xs text-muted mt-1">{sub}</p>
       </div>
     </div>
   );
@@ -53,15 +62,15 @@ function CustomTooltip({ active, payload, label }: CustomTooltipProps) {
   const valorLiquido = payload[1]?.value;
 
   return (
-    <div className="bg-white border border-slate-200 rounded-xl px-4 py-3 shadow-lg text-sm space-y-1">
-      <p className="text-slate-500 text-xs font-medium mb-1.5">{label}</p>
-      <p className="text-slate-900 text-xs flex justify-between gap-4">
-        <span className="text-slate-500">Bruto:</span>
+    <div className="bg-card border border-border rounded-xl px-4 py-3 shadow-lg text-sm space-y-1">
+      <p className="text-muted text-xs font-medium mb-1.5">{label}</p>
+      <p className="text-foreground text-xs flex justify-between gap-4">
+        <span className="text-muted">Bruto:</span>
         <span className="font-semibold">{fmt(Number(valorBruto ?? 0))}</span>
       </p>
-      <p className="text-slate-900 text-xs flex justify-between gap-4">
-        <span className="text-slate-500">Líquido:</span>
-        <span className="font-semibold text-blue-600">{fmt(Number(valorLiquido ?? 0))}</span>
+      <p className="text-foreground text-xs flex justify-between gap-4">
+        <span className="text-muted">Líquido:</span>
+        <span className="font-semibold text-primary">{fmt(Number(valorLiquido ?? 0))}</span>
       </p>
     </div>
   );
@@ -106,19 +115,19 @@ export function ResumoFinanceiro({ transacoes }: ResumoFinanceiroProps) {
         />
       </div>
 
-      <div className="bg-white border border-slate-200/80 rounded-2xl p-6 shadow-sm">
-        <div className="flex items-start justify-between mb-6">
+      <div className="bg-card border border-border rounded-2xl p-6 shadow-sm">
+        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 mb-6">
           <div>
-            <h2 className="text-sm font-semibold text-slate-900">Receita por dia</h2>
-            <p className="text-xs text-slate-500 mt-0.5">Bruto vs. líquido — últimas transações</p>
+            <h2 className="text-sm font-semibold text-foreground">Receita por dia</h2>
+            <p className="text-xs text-muted mt-0.5">Bruto vs. líquido — últimas transações</p>
           </div>
-          <div className="flex items-center gap-4 text-xs text-slate-500">
+          <div className="flex items-center gap-4 text-xs text-muted">
             <span className="flex items-center gap-1.5">
-              <span className="inline-block w-2.5 h-2.5 rounded-sm bg-slate-200" />
+              <span className="inline-block w-2.5 h-2.5 rounded-sm bg-border" />
               Bruto
             </span>
             <span className="flex items-center gap-1.5">
-              <span className="inline-block w-2.5 h-2.5 rounded-sm bg-blue-600" />
+              <span className="inline-block w-2.5 h-2.5 rounded-sm bg-primary" />
               Líquido
             </span>
           </div>
@@ -126,12 +135,12 @@ export function ResumoFinanceiro({ transacoes }: ResumoFinanceiroProps) {
 
         <ResponsiveContainer width="100%" height={220}>
           <BarChart data={grafico} barCategoryGap="35%" margin={{ top: 4, right: 4, left: -16, bottom: 0 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
-            <XAxis dataKey="dia" tick={{ fontSize: 11, fill: '#64748b' }} axisLine={false} tickLine={false} />
-            <YAxis tick={{ fontSize: 11, fill: '#64748b' }} axisLine={false} tickLine={false} tickFormatter={(v) => `R$${v}`} />
-            <Tooltip content={<CustomTooltip />} cursor={{ fill: '#f8fafc' }} />
-            <Bar dataKey="bruto" radius={[4, 4, 0, 0]} fill="#e2e8f0" />
-            <Bar dataKey="liquido" radius={[4, 4, 0, 0]} fill="#2563eb" />
+            <CartesianGrid strokeDasharray="3 3" stroke={CHART_COLORS.grid} vertical={false} />
+            <XAxis dataKey="dia" tick={{ fontSize: 11, fill: CHART_COLORS.axisText }} axisLine={false} tickLine={false} />
+            <YAxis tick={{ fontSize: 11, fill: CHART_COLORS.axisText }} axisLine={false} tickLine={false} tickFormatter={(v) => `R$${v}`} />
+            <Tooltip content={<CustomTooltip />} cursor={{ fill: 'var(--background-secondary)' }} />
+            <Bar dataKey="bruto" radius={[4, 4, 0, 0]} fill={CHART_COLORS.bruto} />
+            <Bar dataKey="liquido" radius={[4, 4, 0, 0]} fill={CHART_COLORS.liquido} />
           </BarChart>
         </ResponsiveContainer>
       </div>

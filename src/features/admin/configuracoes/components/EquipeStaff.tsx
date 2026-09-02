@@ -50,18 +50,18 @@ export function EquipeStaff({ membros }: { membros: MembroEquipe[] }) {
   }
 
   return (
-    <div className="bg-white border border-slate-200/80 rounded-2xl p-6 text-slate-800 shadow-sm space-y-5">
-      <div className="flex items-center justify-between border-b border-slate-100 pb-4">
+    <div className="bg-card border border-border rounded-2xl p-6 text-foreground shadow-sm space-y-5">
+      <div className="flex items-center justify-between border-b border-border-light pb-4">
         <div>
           <div className="flex items-center gap-2">
-            <Users size={18} className="text-blue-600" />
-            <h2 className="text-base font-semibold text-slate-900">Equipe do estabelecimento</h2>
+            <Users size={18} className="text-primary" />
+            <h2 className="text-base font-semibold text-foreground">Equipe do estabelecimento</h2>
           </div>
-          <p className="text-xs text-slate-500 mt-1">
+          <p className="text-xs text-muted mt-1">
             Convide pessoas para fazer check-in no dia do evento. Elas só terão acesso ao modo Check-in.
           </p>
         </div>
-        <span className="text-xs text-slate-500 bg-slate-100 px-2.5 py-1 rounded-md font-medium shrink-0">
+        <span className="text-xs text-muted bg-background-tertiary px-2.5 py-1 rounded-md font-medium shrink-0">
           {membros.length} {membros.length === 1 ? 'membro' : 'membros'}
         </span>
       </div>
@@ -72,14 +72,14 @@ export function EquipeStaff({ membros }: { membros: MembroEquipe[] }) {
           type="email"
           required
           placeholder="email@exemplo.com"
-          className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all flex-1"
+          className="input-base flex-1"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
         />
         <button
           type="submit"
           disabled={convidando}
-          className="flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold bg-blue-600 hover:bg-blue-700 text-white transition-all shadow-sm disabled:opacity-60 cursor-pointer shrink-0"
+          className="flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold bg-primary hover:bg-primary-hover text-primary-fg transition-all shadow-sm disabled:opacity-60 cursor-pointer shrink-0"
         >
           {convidando ? <Loader2 size={16} className="animate-spin" /> : <UserPlus size={16} />}
           Convidar
@@ -87,50 +87,50 @@ export function EquipeStaff({ membros }: { membros: MembroEquipe[] }) {
       </form>
 
       {erro && (
-        <p role="alert" className="bg-red-50 border border-red-200 text-red-600 text-sm px-4 py-3 rounded-xl">
+        <p role="alert" className="bg-error-bg border border-error-fg/20 text-error-fg text-sm px-4 py-3 rounded-xl">
           {erro}
         </p>
       )}
 
       {sucesso && (
-        <p className="bg-emerald-50 border border-emerald-200 text-emerald-700 text-sm px-4 py-3 rounded-xl">
+        <p className="bg-success-bg border border-success-fg/20 text-success-fg text-sm px-4 py-3 rounded-xl">
           {sucesso}
         </p>
       )}
 
       {/* Lista de membros */}
-      <div className="divide-y divide-slate-100 border-t border-slate-100 pt-3">
+      <div className="divide-y divide-border-light border-t border-border-light pt-3">
         {membros.length === 0 ? (
-          <p className="text-sm text-slate-400 py-6 text-center">Nenhum membro na equipe ainda.</p>
+          <p className="text-sm text-muted-subtle py-6 text-center">Nenhum membro na equipe ainda.</p>
         ) : (
           membros.map((m) => (
             <div key={m.id} className="flex items-center justify-between py-3">
               <div className="flex items-center gap-3 min-w-0">
-                <div className="w-9 h-9 rounded-full bg-blue-50 border border-blue-100 text-blue-600 flex items-center justify-center text-xs font-bold shrink-0">
+                <div className="w-9 h-9 rounded-full bg-primary/10 border border-primary/15 text-primary flex items-center justify-center text-xs font-bold shrink-0">
                   {(m.nome ?? m.email).charAt(0).toUpperCase()}
                 </div>
                 <div className="min-w-0">
-                  <p className="text-sm font-medium text-slate-900 truncate">{m.nome ?? m.email}</p>
-                  <p className="text-xs text-slate-500 truncate">{m.email}</p>
+                  <p className="text-sm font-medium text-foreground truncate">{m.nome ?? m.email}</p>
+                  <p className="text-xs text-muted truncate">{m.email}</p>
                 </div>
               </div>
 
               <div className="flex items-center gap-2 shrink-0">
                 {['dono_estabelecimento', 'super_admin'].includes(m.role) ? (
-                  <span className="flex items-center gap-1.5 text-xs font-medium text-amber-700 bg-amber-50 border border-amber-200/60 px-2.5 py-1 rounded-lg">
-                    <Crown size={13} className="text-amber-500" />
+                  <span className="flex items-center gap-1.5 text-xs font-medium text-warning-fg bg-warning-bg border border-warning-fg/20 px-2.5 py-1 rounded-lg">
+                    <Crown size={13} className="text-warning-fg" />
                     Dono
                   </span>
                 ) : (
                   <>
-                    <span className="text-xs font-medium text-slate-600 bg-slate-100 px-2.5 py-1 rounded-lg border border-slate-200">
+                    <span className="text-xs font-medium text-muted bg-background-tertiary px-2.5 py-1 rounded-lg border border-border">
                       Check-in
                     </span>
                     <button
                       type="button"
                       onClick={() => handleRevogar(m)}
                       disabled={revogandoId === m.id}
-                      className="p-1.5 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors disabled:opacity-50 cursor-pointer"
+                      className="p-1.5 rounded-lg text-muted-subtle hover:text-error-fg hover:bg-error-bg transition-colors disabled:opacity-50 cursor-pointer"
                       aria-label="Revogar acesso"
                       title="Revogar acesso"
                     >

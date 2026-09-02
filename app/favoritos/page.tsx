@@ -19,7 +19,7 @@ export default async function FavoritosPage() {
   const favoritos = await listarMeusFavoritos();
 
   return (
-    <main className="min-h-screen bg-background text-foreground p-6 sm:p-8">
+    <main className="min-h-screen bg-background text-foreground p-4 sm:p-6 md:p-8">
       <div className="max-w-6xl mx-auto space-y-6">
         <Link href="/" className="flex items-center gap-1.5 text-sm text-muted hover:text-primary transition-colors">
           <ArrowLeft size={14} />
@@ -32,7 +32,7 @@ export default async function FavoritosPage() {
         </div>
 
         {favoritos.length === 0 ? (
-          <div className="clubber-card flex flex-col items-center py-16 text-center border-dashed">
+          <div className="clubber-card flex flex-col items-center py-16 text-center border-dashed px-4">
             <Heart size={32} className="text-muted-subtle mb-3" strokeWidth={1.3} />
             <p className="text-muted">Você ainda não favoritou nenhum evento.</p>
             <Link href="/" className="text-primary text-sm mt-2 hover:underline">

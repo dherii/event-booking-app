@@ -1,4 +1,3 @@
-// src/features/admin/certificados/components/PainelEmissao.tsx
 'use client';
 
 import { useState } from 'react';
@@ -58,9 +57,9 @@ const HISTORICO_STATUS: Record<
   HistoricoEmissao['status'],
   { label: string; icon: React.ElementType; className: string }
 > = {
-  enviado:      { label: 'Enviado',      icon: CheckCircle,  className: 'text-success-fg'                                              },
-  processando:  { label: 'Processando',  icon: Clock,        className: 'text-yellow-600 dark:text-yellow-400'                        },
-  erro:         { label: 'Erro',         icon: AlertCircle,  className: 'text-error-fg'                                                },
+  enviado:      { label: 'Enviado',      icon: CheckCircle,  className: 'text-success-fg' },
+  processando:  { label: 'Processando',  icon: Clock,        className: 'text-warning-fg' },
+  erro:         { label: 'Erro',         icon: AlertCircle,  className: 'text-error-fg'   },
 };
 
 function CardHistorico({ item }: { item: HistoricoEmissao }) {

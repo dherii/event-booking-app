@@ -14,7 +14,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Clubber Tickets | Ingressos e Experiências",
+  title: "Vertix | Venda de Ingressos ",
   description: "Garanta seus ingressos para as melhores festas, eventos acadêmicos e experiências.",
 };
 

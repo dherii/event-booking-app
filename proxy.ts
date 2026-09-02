@@ -1,8 +1,8 @@
-// middleware.ts
+// proxy.ts
 import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   let response = NextResponse.next({
     request: {
       headers: request.headers,
@@ -64,7 +64,7 @@ export async function middleware(request: NextRequest) {
     }
 
   } catch (error) {
-    console.error('Middleware: Erro crítico ao validar sessão.', error);
+    console.error('proxy: Erro crítico ao validar sessão.', error);
     return NextResponse.redirect(new URL('/auth/login', request.url));
   }
 

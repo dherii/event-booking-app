@@ -13,7 +13,6 @@ export function BotaoDeletarEvento({ eventoId, nomeEvento }: BotaoDeletarEventoP
   const [isPending, startTransition] = useTransition();
 
   function handleDelete(e: React.MouseEvent) {
-    // Impede que o clique no botão navegue para a página do evento
     e.preventDefault();
     e.stopPropagation();
 
@@ -33,7 +32,7 @@ export function BotaoDeletarEvento({ eventoId, nomeEvento }: BotaoDeletarEventoP
       type="button"
       onClick={handleDelete}
       disabled={isPending}
-      className="p-1.5 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors disabled:opacity-50 shrink-0"
+      className="p-1.5 rounded-lg text-muted-subtle hover:text-error-fg hover:bg-error-bg transition-colors disabled:opacity-50 shrink-0"
       title="Deletar evento"
     >
       <Trash2 size={16} />

@@ -63,10 +63,107 @@ const LABEL_TIPO: Record<string, string> = {
   camarote: 'Camarote',
 };
 
+interface LoteRow {
+  id: string;
+  nome: string;
+  preco: number;
+  tipo: string;
+  capacidade_pessoas: number | null;
+  quantidade_disponivel: number;
+}
+
+// Card de "Ingressos e Reservas" extraído pra ser reaproveitado tanto na
+// sidebar fixa do desktop quanto no fluxo normal da página no mobile —
+// antes ele só existia na versão desktop (hidden lg:block), deixando o
+// usuário no celular sem conseguir ver/comprar lotes além do primeiro.
+function IngressosCard({ eventoId, lotes }: { eventoId: string; lotes: LoteRow[] }) {
+  return (
+    <div className="bg-card rounded-2xl p-6 border border-border shadow-card space-y-5">
+      <div>
+        <h2 className="text-lg font-bold text-foreground">Ingressos e Reservas</h2>
+        <p className="text-xs text-muted mt-1">
+          Escolha a opção desejada para garantir sua participação.
+        </p>
+      </div>
+
+      {lotes.length === 0 ? (
+        <div className="p-6 text-center rounded-xl border border-dashed border-border bg-background-secondary">
+          <Ticket size={24} className="mx-auto text-muted-subtle mb-2" />
+          <p className="text-sm text-muted font-medium">Nenhum lote disponível no momento.</p>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {lotes.map((lote) => {
+            const Icon = ICONE_TIPO[lote.tipo] ?? Ticket;
+            const esgotado = lote.quantidade_disponivel <= 0;
+
+            return (
+              <div
+                key={lote.id}
+                className="flex flex-col gap-3 bg-background border border-border hover:border-primary/40 rounded-xl p-4 transition-all"
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="w-10 h-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0">
+                      <Icon size={18} />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-sm font-bold text-foreground truncate">{lote.nome}</p>
+                      <p className="text-xs text-muted">
+                        {LABEL_TIPO[lote.tipo] ?? lote.tipo}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="text-right shrink-0">
+                    <span className="text-base font-extrabold text-primary">
+                      {formatCurrency(lote.preco)}
+                    </span>
+                    <span className="block text-[11px] text-muted">
+                      {esgotado ? (
+                        <span className="text-error-fg font-semibold">Esgotado</span>
+                      ) : (
+                        `${lote.quantidade_disponivel} disponíveis`
+                      )}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="pt-2 border-t border-border/50">
+                  <BotaoComprarLote
+                    eventoId={eventoId}
+                    loteId={lote.id}
+                    esgotado={esgotado}
+                    label="Garantir meu ingresso"
+                  />
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      <div className="pt-4 border-t border-border space-y-2.5 text-xs text-muted">
+        <div className="flex items-center gap-2">
+          <ShieldCheck size={15} className="text-primary shrink-0" />
+          <span>Pagamento 100% seguro via Pix</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <Zap size={15} className="text-primary shrink-0" />
+          <span>Confirmação instantânea do lote</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <QrCode size={15} className="text-primary shrink-0" />
+          <span>Ingresso digital no seu celular</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default async function EventoPage({ params }: EventoPageProps) {
   const { id } = await params;
 
-  // Correção aplicada: Inicializando o cliente Supabase de servidor corretamente
   const supabase = await createSupabaseServerClient();
 
   const { data: evento } = await supabase
@@ -82,14 +179,7 @@ export default async function EventoPage({ params }: EventoPageProps) {
 
   if (!evento) notFound();
 
-  const lotes: Array<{
-    id: string;
-    nome: string;
-    preco: number;
-    tipo: string;
-    capacidade_pessoas: number | null;
-    quantidade_disponivel: number;
-  }> = evento.lotes ?? [];
+  const lotes: LoteRow[] = evento.lotes ?? [];
 
   const primeiroLote = lotes[0];
 
@@ -123,9 +213,9 @@ export default async function EventoPage({ params }: EventoPageProps) {
 
       <div className="max-w-6xl mx-auto px-4 pt-4 sm:pt-8">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-start">
-          
+
           <div className="lg:col-span-7 space-y-6">
-            
+
             <div className="relative w-full aspect-[16/9] rounded-2xl overflow-hidden border border-border shadow-sm bg-card">
               {evento.banner_url ? (
                 // eslint-disable-next-line @next/next/no-img-element
@@ -281,89 +371,16 @@ export default async function EventoPage({ params }: EventoPageProps) {
                 </div>
               </div>
             </div>
+
+            {/* Ingressos — visível no mobile dentro do fluxo normal da página,
+                já que a sidebar ao lado só aparece a partir de lg */}
+            <div className="lg:hidden">
+              <IngressosCard eventoId={evento.id} lotes={lotes} />
+            </div>
           </div>
 
           <div className="hidden lg:block lg:col-span-5 lg:sticky lg:top-20 space-y-4">
-            <div className="bg-card rounded-2xl p-6 border border-border shadow-card space-y-5">
-              <div>
-                <h2 className="text-lg font-bold text-foreground">Ingressos e Reservas</h2>
-                <p className="text-xs text-muted mt-1">
-                  Escolha a opção desejada para garantir sua participação.
-                </p>
-              </div>
-
-              {lotes.length === 0 ? (
-                <div className="p-6 text-center rounded-xl border border-dashed border-border bg-background-secondary">
-                  <Ticket size={24} className="mx-auto text-muted-subtle mb-2" />
-                  <p className="text-sm text-muted font-medium">Nenhum lote disponível no momento.</p>
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  {lotes.map((lote) => {
-                    const Icon = ICONE_TIPO[lote.tipo] ?? Ticket;
-                    const esgotado = lote.quantidade_disponivel <= 0;
-
-                    return (
-                      <div
-                        key={lote.id}
-                        className="flex flex-col gap-3 bg-background border border-border hover:border-primary/40 rounded-xl p-4 transition-all"
-                      >
-                        <div className="flex items-start justify-between gap-3">
-                          <div className="flex items-center gap-3 min-w-0">
-                            <div className="w-10 h-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0">
-                              <Icon size={18} />
-                            </div>
-                            <div className="min-w-0">
-                              <p className="text-sm font-bold text-foreground truncate">{lote.nome}</p>
-                              <p className="text-xs text-muted">
-                                {LABEL_TIPO[lote.tipo] ?? lote.tipo}
-                              </p>
-                            </div>
-                          </div>
-
-                          <div className="text-right shrink-0">
-                            <span className="text-base font-extrabold text-primary">
-                              {formatCurrency(lote.preco)}
-                            </span>
-                            <span className="block text-[11px] text-muted">
-                              {esgotado ? (
-                                <span className="text-error-fg font-semibold">Esgotado</span>
-                              ) : (
-                                `${lote.quantidade_disponivel} disponíveis`
-                              )}
-                            </span>
-                          </div>
-                        </div>
-
-                        <div className="pt-2 border-t border-border/50">
-                          <BotaoComprarLote
-                            eventoId={evento.id}
-                            loteId={lote.id}
-                            esgotado={esgotado}
-                            label="Garantir meu ingresso"
-                          />
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-
-              <div className="pt-4 border-t border-border space-y-2.5 text-xs text-muted">
-                <div className="flex items-center gap-2">
-                  <ShieldCheck size={15} className="text-primary shrink-0" />
-                  <span>Pagamento 100% seguro via Pix</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Zap size={15} className="text-primary shrink-0" />
-                  <span>Confirmação instantânea do lote</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <QrCode size={15} className="text-primary shrink-0" />
-                  <span>Ingresso digital no seu celular</span>
-                </div>
-              </div>
-            </div>
+            <IngressosCard eventoId={evento.id} lotes={lotes} />
           </div>
 
         </div>
