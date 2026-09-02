@@ -147,16 +147,16 @@ export function CatalogoClient({ eventos, favoritosIds = [] }: { eventos: Evento
   }, [eventos, filtro, busca, ordem, localizacaoUsuario]);
 
   function IconeFiltro({ categoria }: { categoria: string }) {
-  const iconProps = { size: 15 };  
-  switch (categoria) {
-    case 'Hoje': return <CalendarDays {...iconProps} />;
-    case 'Universitário': return <GraduationCap {...iconProps} />;
-    case 'Pub / Bar': return <Beer {...iconProps} />;
-    case 'Festa': return <Home {...iconProps} />;
-    case 'Perto de mim': return <Navigation {...iconProps} />;
-    default: return null;
+    const iconProps = { size: 15 };
+    switch (categoria) {
+      case 'Hoje': return <CalendarDays {...iconProps} />;
+      case 'Universitário': return <GraduationCap {...iconProps} />;
+      case 'Pub / Bar': return <Beer {...iconProps} />;
+      case 'Festa': return <Home {...iconProps} />;
+      case 'Perto de mim': return <Navigation {...iconProps} />;
+      default: return null;
+    }
   }
-}
 
   return (
     <div className="space-y-6 sm:space-y-8">
@@ -169,11 +169,10 @@ export function CatalogoClient({ eventos, favoritosIds = [] }: { eventos: Evento
               key={cat}
               onClick={() => lidarComCliqueFiltro(cat)}
               disabled={cat === 'Perto de mim' && carregandoLocal}
-              className={`flex min-h-11 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border px-4 text-sm font-medium transition-colors sm:min-h-0 sm:rounded-none sm:border-0 sm:border-b-2 sm:px-2.5 sm:py-2.5 sm:text-[13px] ${
-                ativo
+              className={`flex min-h-11 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border px-4 text-sm font-medium transition-colors sm:min-h-0 sm:rounded-none sm:border-0 sm:border-b-2 sm:px-2.5 sm:py-2.5 sm:text-[13px] ${ativo
                   ? 'border-primary bg-primary text-primary-fg sm:border-primary sm:bg-transparent sm:text-foreground'
                   : 'border-border bg-card text-muted hover:border-input-border-hover hover:text-foreground sm:border-transparent sm:bg-transparent sm:hover:border-transparent'
-              }`}
+                }`}
             >
               <IconeFiltro categoria={cat} />
               {cat === 'Perto de mim' && carregandoLocal ? 'Obtendo local...' : cat}
